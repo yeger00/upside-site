@@ -48,7 +48,7 @@
 .btn.wide { width: calc(620 * var(--k)); height: calc(150 * var(--k)); }
 .btn.wide .ic { width: 25%; }
 .btn .fill { position: absolute; left: 4%; top: 10%; bottom: 18%; width: 0; border-radius: calc(40 * var(--k)); background: rgba(255, 210, 122, 0.6); pointer-events: none; }
-.btn:focus-visible, .pill:focus-visible, .round:focus-visible, .card:focus-visible, .toggle:focus-visible { outline: calc(6 * var(--k)) solid #ffd27a; outline-offset: calc(2 * var(--k)); border-radius: calc(40 * var(--k)); }
+.btn:focus-visible, .pill:focus-visible, .round:focus-visible, .card:focus-visible { outline: calc(6 * var(--k)) solid #ffd27a; outline-offset: calc(2 * var(--k)); border-radius: calc(40 * var(--k)); }
 
 /* small pills (Credits, Quit) and the purple pill (Reset progress) */
 .pills { display: flex; gap: calc(40 * var(--k)); flex: 0 0 auto; }
@@ -73,8 +73,6 @@
 
 .version { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 72 * var(--s)); transform: translate(-50%, 50%);
   color: #f4eafe; font-weight: 600; font-size: calc(30 * var(--s)); text-shadow: 0 1px 2px rgba(30, 15, 50, 0.6); pointer-events: none; }
-.hint { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 176 * var(--s)); text-align: center; pointer-events: none;
-  font-weight: 700; font-size: calc(34 * var(--k)); color: #fff; text-shadow: 0 1px 4px rgba(20, 10, 50, 0.85); min-height: 1em; }
 
 /* ---- levels: seven cards a page (3, 3, 1), the pictures from the design ---- */
 .pages { position: relative; flex: 0 0 auto; width: 100%; overflow: hidden; touch-action: pan-y; }
@@ -101,21 +99,6 @@
 .dots::before { right: calc(100% + 22 * var(--k)); } .dots::after { left: calc(100% + 22 * var(--k)); }
 .dots button { width: calc(28 * var(--k)); height: calc(28 * var(--k)); border-radius: 50%; border: 0; padding: 0; background: #e6dcf8; cursor: pointer; }
 .dots button.on { background: #ffd34d; box-shadow: 0 0 0 calc(3 * var(--k)) #d79a1c; }
-
-/* ---- settings ---- */
-.rows { flex: 0 0 auto; display: flex; flex-direction: column; gap: calc(14 * var(--k)); margin-top: calc(14 * var(--k)); }
-.setrow { position: relative; display: flex; align-items: center; width: calc(674 * var(--k)); height: calc(126 * var(--k));
-  background: url(assets/ui/plate.webp) center / 100% 100% no-repeat; box-sizing: border-box; padding: 0 calc(26 * var(--k)) calc(10 * var(--k)) 0; }
-.setrow .ic { width: calc(150 * var(--k)); display: grid; place-items: center; flex: 0 0 auto; }
-.setrow .ic svg { width: calc(66 * var(--k)); height: calc(66 * var(--k)); fill: var(--ink); }
-.setrow .div { width: calc(4 * var(--k)); height: 45%; background: rgba(58, 37, 80, 0.22); border-radius: 2px; flex: 0 0 auto; }
-.setrow .label { flex: 1; padding-left: calc(24 * var(--k)); font-weight: 700; font-size: calc(44 * var(--k)); line-height: 1.02; white-space: nowrap; }
-.setrow .label small { display: block; font-size: calc(24 * var(--k)); font-weight: 600; opacity: 0.7; margin-top: calc(3 * var(--k)); }
-.toggle { position: relative; flex: 0 0 auto; width: calc(198 * var(--k)); height: calc(92 * var(--k)); border: 0; padding: 0; cursor: pointer; background: url(assets/ui/toggle-off.webp) center / contain no-repeat; }
-.toggle[aria-checked="true"] { background-image: url(assets/ui/toggle-on.webp); }
-.toggle span { position: absolute; top: 24%; height: 62%; display: flex; align-items: center; font-weight: 700; font-size: calc(36 * var(--k)); }
-.toggle[aria-checked="true"] span { left: 16%; color: #fff; text-shadow: 0 1px 1px rgba(30, 80, 10, 0.5); }
-.toggle[aria-checked="false"] span { right: 13%; top: 17%; color: #f2ecfa; }
 
 /* ---- how to play: four cards with tabs, a little scene in each ---- */
 .tips { flex: 0 0 auto; display: grid; grid-template-columns: repeat(2, calc(420 * var(--k))); gap: calc(22 * var(--k)) calc(14 * var(--k)); margin-top: calc(10 * var(--k)); }
@@ -151,8 +134,8 @@
 .pause .panel2.white { transform: translate(-50%, -50%) rotate(180deg); }
 .pause .panel2 > img { width: 100%; height: 100%; display: block; pointer-events: none; }
 .pause .ptitle { position: absolute; left: 30%; right: 30%; top: 29.5%; height: 7%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: calc(66 * var(--k)); }
-.pause .pbtns { position: absolute; left: 14%; right: 14%; top: 40.6%; height: 45%; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
-.pause .btn { width: 100%; height: 24.5%; margin: 0; }
+.pause .pbtns { position: absolute; left: 14%; right: 14%; top: 42%; height: 42%; display: flex; flex-direction: column; justify-content: space-around; align-items: center; }
+.pause .btn { width: 100%; height: 27%; margin: 0; }
 .pause .btn .label { font-size: calc(50 * var(--k)); }
 .pause .close { position: absolute; left: 85.2%; top: 0.8%; width: 13.8%; aspect-ratio: 1; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 50%; }
 

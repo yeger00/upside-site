@@ -1,4 +1,4 @@
-/* Upside: the menus, laid out like the painted designs in art/menu/. Main menu, Levels, Settings, How to Play,
+/* Upside: the menus, laid out like the painted designs in art/menu/. Main menu, Levels, How to Play,
    Credits, Full game, Level complete, and the pause panel.
    Plain DOM over the game's canvas; the game (index.html) passes in what the menus need with UpsideMenu.init(game).
    The menus face the bottom of the phone (Black's side): one person holds the phone to choose. The pause panel
@@ -44,7 +44,6 @@
       <div class="grow"></div>
       ${btn('data-go="play"', 'play', 'Play')}
       ${btn('data-go="levels"', 'levels', 'Levels')}
-      ${btn('data-go="settings"', 'settings', 'Settings')}
       ${btn('data-go="howto"', 'book', 'How to Play')}
       <div class="grow"></div>
       <div class="pills">
@@ -62,14 +61,6 @@
       <div class="dots"></div>
       <div class="grow"></div>
       ${btn('data-play-selected', 'play', 'Play Selected', 'wide')}
-      <div class="hint" aria-live="polite"></div>
-    </section>`);
-    scr.settings = el(`<section class="screen" data-screen="settings" aria-label="Settings">
-      <button class="round l back" data-back aria-label="Back"></button>
-      ${crest('Settings')}
-      <div class="rows"></div>
-      <div class="grow"></div>
-      ${btn('data-back', 'check', 'Done')}
     </section>`);
     scr.howto = el(`<section class="screen" data-screen="howto" aria-label="How to Play">
       <button class="round l back" data-back aria-label="Back"></button>
@@ -122,7 +113,6 @@
         <div class="pbtns">
           ${btn('data-pause="resume"', 'play', 'Resume')}
           ${btn('data-pause="restart"', 'restart', 'Restart')}
-          ${btn('data-pause="settings"', 'settings', 'Settings')}
           ${btn('data-pause="home"', 'home', 'Home')}
         </div>
       </div></div>`);
@@ -135,8 +125,7 @@
       const b = e.target.closest('[data-pause]'); if (!b) return;
       G.click();
       const what = b.dataset.pause;
-      if (what === 'settings') { pause(false); open('settings', { back: 'pause' }); }   // the game stays paused underneath
-      else { pause(false); G.pauseAction(what); }
+      pause(false); G.pauseAction(what);
     });
     setupSwipe();
   }
@@ -150,7 +139,6 @@
     for (const [k, s] of Object.entries(scr)) s.classList.toggle('on', k === name);
     if (name === 'home') renderHome();
     if (name === 'levels') renderLevels(opts.page);
-    if (name === 'settings') renderSettings();
     if (name === 'howto') startTips(); else stopTips();
     if (name === 'full') renderFull();
     if (name === 'complete') renderComplete();
@@ -166,7 +154,6 @@
     if (!current) return false;
     if (current === 'home') return false;
     G.click();
-    if (opts.back === 'pause') { close(); pause(true, pausePid); return true; }
     if (current === 'complete') { open('levels'); return true; }
     open(opts.back && scr[opts.back] ? opts.back : 'home', opts.back === 'levels' ? { page: levelPage } : undefined);
     return true;
@@ -212,8 +199,6 @@
     if (card) { G.click(); cardTap(+card.dataset.i); return; }
     const dot = t.closest('.dots button');
     if (dot) { G.click(); showPage(+dot.dataset.p); return; }
-    const tog = t.closest('.toggle');
-    if (tog) { G.click(); toggleSetting(tog.dataset.key); renderSettings(); return; }
   }
 
   /* ---- home ---- */
@@ -256,7 +241,6 @@
       if (pages > 1) dots.appendChild(el(`<button data-p="${p}" aria-label="Page ${p + 1}"></button>`));
     }
     dots.hidden = pages < 2;
-    hint('');
     showPage(page != null ? page : Math.floor(selected / PER_PAGE));
   }
   function makeCard(c, defs) {
@@ -279,17 +263,16 @@
     scr.levels.querySelector('.track').style.transform = `translateX(${-100 * levelPage}%)`;
     scr.levels.querySelectorAll('.dots button').forEach((b, i) => b.classList.toggle('on', i === levelPage));
   }
-  function hint(text) { scr.levels.querySelector('.hint').textContent = text; }
   function cardTap(i) {
     const c = cardsNow()[i];
     if (c.state === 'full') { open('full', { back: 'levels' }); return; }
-    if (c.state === 'locked') { hint(`Finish level ${i} first`); return; }
+    if (c.state === 'locked') return;
     if (selected === i) { close(); G.play(i); return; }         // a second tap plays it
     selected = i; renderLevels(levelPage);
   }
   function playSelected() {
     const c = cardsNow()[selected];
-    if (!c || c.state === 'locked' || c.state === 'full') { hint('Pick a level'); return; }
+    if (!c || c.state === 'locked' || c.state === 'full') return;
     close(); G.play(selected);
   }
   function setupSwipe() {
@@ -305,26 +288,7 @@
     pagesEl.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
   }
 
-  /* ---- settings ---- */
-  function renderSettings() {
-    const s = G.save().settings, rows = scr.settings.querySelector('.rows');
-    rows.innerHTML = '';
-    const row = (key, icon, label, sub, on) => rows.appendChild(el(`<div class="setrow"><span class="ic">${svg(icon)}</span><span class="div"></span>
-      <span class="label">${label}${sub ? `<small>${sub}</small>` : ''}</span>
-      <button class="toggle" role="switch" aria-checked="${on}" aria-label="${label}" data-key="${key}"><span>${on ? 'On' : 'Off'}</span></button></div>`));
-    row('sound', 'sound', 'Sound', '', s.sound);
-    if (G.canVibrate()) row('vibration', 'vibrate', 'Vibration', '', s.vibration);
-    if (G.canFullscreen()) row('fullscreen', 'fullscreen', 'Full Screen', '', s.fullscreen);
-    row('speed', 'snail', 'Slower Game', 'More time to jump', s.speed === 'slow');
-    const reset = el(`<button class="pill purple" data-hold="reset"><span class="fill"></span>${svg('trash')}<span>Reset Progress</span><small>Hold to start over</small></button>`);
-    rows.appendChild(reset);
-    holdButton(reset, 2500, reset.querySelector('.fill'), () => { G.update(sv => PR.resetProgress(sv)); flash(reset, 'Progress cleared'); });
-    if (G.isApp()) {
-      const rest = el(`<button class="pill purple" data-hold="restore"><span class="fill"></span>${svg('restore')}<span>Restore Purchase</span><small>Ask a grown-up to hold</small></button>`);
-      rows.appendChild(rest);
-      holdButton(rest, 2500, rest.querySelector('.fill'), () => G.restorePurchase().then(msg => flash(rest, msg)));
-    }
-  }
+  /* ---- sound (the main menu's corner button) and hold-to-confirm buttons ---- */
   function toggleSetting(key) {
     G.update(sv => {
       const st = Object.assign({}, sv.settings);
@@ -334,7 +298,7 @@
     });
     if (key === 'fullscreen') G.applyFullscreen();
   }
-  // A button that must be held for 2.5 seconds (so a child can't do it by accident)
+  // A button that must be held for 2.5 seconds (so a child can't do it by accident): the full game's Unlock
   function holdButton(b, ms, fill, done) {
     let t0 = 0, raf = 0;
     const stop = () => { cancelAnimationFrame(raf); t0 = 0; if (fill) fill.style.width = '0'; };
@@ -349,12 +313,6 @@
     b.addEventListener('click', e => e.stopPropagation());
     b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); done(); } });
   }
-  function flash(b, text) {
-    const small = b.querySelector('small'); if (!small) return;
-    const was = small.textContent; small.textContent = text;
-    setTimeout(() => { small.textContent = was; }, 2200);
-  }
-
   /* ---- how to play: four little animated scenes ---- */
   function startTips() {
     stopTips();
