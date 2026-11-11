@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#3A2F63">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Upside Co-op Prototype</title>
+<title>Upside</title>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -27,8 +27,9 @@
     -webkit-tap-highlight-color: transparent;
   }
   body { position: fixed; inset: 0; }
-  canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; outline: none; }
+  #c { display: block; position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; outline: none; }
 </style>
+<link rel="stylesheet" href="menu.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap">
 </head>
@@ -36,6 +37,8 @@
 <canvas id="c" tabindex="0" aria-label="Upside: a two-player co-op game. Black plays from the bottom edge, White from the top edge."></canvas>
 <script src="level-format.js"></script>
 <script src="art.js"></script>
+<script src="progress.js"></script>
+<script src="menu.js"></script>
 <script>
 (() => {
 'use strict';
@@ -63,7 +66,12 @@ const C = { stage: P.stage, black: P.dark, white: P.light, machineLit: P.cyan };
    (format and legend: see level-format.js)
    ============================================================ */
 let LEVELS = [];
-let EDITION = { edition: 'full' };   // the demo website loads {"edition":"demo","fullLevels":N} from edition.json
+let EDITION = { edition: 'full' };   // edition.json: the demo website ('demo') or the app ('app'); see progress.js
+const PR = window.UpsideProgress, MENU = window.UpsideMenu;
+let SAVE = PR.blank();               // progress and settings, kept on the device (progress.js)
+const isApp = (() => { try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); } catch (e) { return false; } })();
+function updateSave(fn) { SAVE = PR.store(fn(SAVE)); applySettings(); }
+function applySettings() { muted = !SAVE.settings.sound; }
 
 const SYMBOL = { a: 'circle', b: 'triangle', c: 'square', d: 'diamond' };
 
@@ -71,7 +79,8 @@ const SYMBOL = { a: 'circle', b: 'triangle', c: 'square', d: 'diamond' };
    STATE
    ============================================================ */
 const S = {
-  state: 'title',          // title | play | won | end
+  state: 'title',          // menu | title | play | won | end (and loading, error, waiting)
+  paused: false,
   levelIndex: 0, startLevel: 0,
   L: null, p1: null, p2: null, crates: [], bodies: [],
   particles: [], events: [],
@@ -374,6 +383,7 @@ function step(i1, i2) {
 function win() {
   setState('won');
   S.events.push('win');
+  if (S.mode === 'game' && LEVELS[S.levelIndex]) updateSave(sv => PR.markFinished(sv, LEVELS[S.levelIndex].id));
   sfx('win'); buzz([40, 60, 40]);
   for (const p of [S.p1, S.p2]) burst(p.x + p.w / 2, p.y + p.h / 2, p.id === 1 ? C.black : C.white, 30, 7);
 }
@@ -435,7 +445,7 @@ function sfx(name) {
     case 'win': [523, 659, 784, 1047].forEach((f, i) => tone(f, 0, 0.3, 'triangle', 0.08, i * 0.1)); break;
   }
 }
-function buzz(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
+function buzz(pattern) { if (!SAVE.settings.vibration) return; try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {} }
 
 /* ============================================================
    PLATFORM: fullscreen, orientation, wake lock
@@ -447,6 +457,10 @@ async function requestWake() {
 function firstGesture() {
   if (gestureDone) return;
   gestureDone = true;
+  if (SAVE.settings.fullscreen && !isApp) enterFullscreen();
+  requestWake();
+}
+function enterFullscreen() {
   try {
     const el = document.documentElement;
     if (el.requestFullscreen && !document.fullscreenElement) {
@@ -455,7 +469,10 @@ function firstGesture() {
         .catch(() => {});
     }
   } catch (e) {}
-  requestWake();
+}
+function applyFullscreen() {
+  if (SAVE.settings.fullscreen) enterFullscreen();
+  else if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && gestureDone) requestWake();
@@ -557,11 +574,18 @@ function bandZones() {
   const f = [0, 1 / 3, 2 / 3, 1].map(v => m + v * iw);            // three equal buttons, as in the design
   return { left: [f[0], f[1]], right: [f[1], f[2]], jump: [f[2], f[3]] };
 }
-// small round buttons on the map's right edge: volume in the middle,
+// small round buttons on the map's right edge: pause in the middle (sound in a play-test or a shared level),
 // each player's restart on their own side of it
 function uiSpots() {
   const x = gx + gw - 24, y = mapY + mapH / 2;
-  return { mute: { x, y }, r1: { x, y: y + 50 }, r2: { x, y: y - 50 } };
+  return { mid: { x, y }, r1: { x, y: y + 50 }, r2: { x, y: y - 50 } };
+}
+const canPause = () => S.mode === 'game' && (S.state === 'play' || S.state === 'title' || S.state === 'won');
+function setPaused(on) {
+  if (on && !canPause()) return;
+  S.paused = !!on;
+  pointers.clear(); recompute();
+  MENU.pause(S.paused);
 }
 const hit = (p, x, y) => Math.hypot(x - p.x, y - p.y) < 22;
 function zoneAt(sx, sy) {
@@ -591,7 +615,10 @@ canvas.addEventListener('pointerdown', e => {
   const rec = z ? { player: z.player, zone: z.zone, t: performance.now() } : { player: 0 };
   if (!z) {
     const u = uiSpots();
-    if (hit(u.mute, e.clientX, e.clientY)) muted = !muted;
+    if (hit(u.mid, e.clientX, e.clientY)) {
+      if (S.mode === 'game') setPaused(true);
+      else updateSave(sv => Object.assign({}, sv, { settings: Object.assign({}, sv.settings, { sound: !sv.settings.sound }) }));
+    }
     else if (hit(u.r1, e.clientX, e.clientY)) rec.restartFor = 1;
     else if (hit(u.r2, e.clientX, e.clientY)) rec.restartFor = 2;
   }
@@ -618,12 +645,15 @@ document.addEventListener('gesturestart', e => e.preventDefault());
 
 window.addEventListener('keydown', e => {
   unlockAudio();
+  if (MENU.isOpen()) return;                       // the menus handle their own keys
+  if (e.code === 'Escape' || e.code === 'KeyP') { if (S.paused) { setPaused(false); } else setPaused(true); e.preventDefault(); return; }
+  if (S.paused) return;
   if (e.repeat) { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault(); return; }
   keys[e.code] = true;
   if (e.code === 'KeyW') jumpEdge[1] = true;
   if (e.code === 'ArrowDown' || e.code === 'ArrowUp') jumpEdge[2] = true;
   if (e.code === 'Space') keyReadyStamp = performance.now();
-  if (e.code === 'KeyM') muted = !muted;
+  if (e.code === 'KeyM') updateSave(sv => Object.assign({}, sv, { settings: Object.assign({}, sv.settings, { sound: !sv.settings.sound }) }));
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
 });
 window.addEventListener('keyup', e => { keys[e.code] = false; });
@@ -650,22 +680,47 @@ function readyHeld(pid) {
 /* ============================================================
    STATE MACHINE
    ============================================================ */
-function setState(s) { S.state = s; S.stateT = 0; S.stateStamp = performance.now(); S.ready = [0, 0, 0]; }
+function setState(s) {
+  S.state = s; S.stateT = 0; S.stateStamp = performance.now(); S.ready = [0, 0, 0];
+  if (s !== 'menu') { if (MENU.isOpen()) MENU.close(); }
+  if (s !== 'play' && s !== 'title' && s !== 'won' && S.paused) { S.paused = false; MENU.pause(false); }
+}
+const ids = () => LEVELS.map(l => l.id);
+// The menus: the game waits underneath, frozen
+function showMenu(screen, o) {
+  if (S.paused) { S.paused = false; MENU.pause(false); }
+  setState('menu');
+  MENU.open(screen, o);
+}
+// From the menu: show level i's start card (both hold to start)
+function playFromMenu(i) {
+  S.mode = 'game';
+  loadLevel(i); setState('title');
+}
+function startPlaying() {
+  setState('play');
+  if (S.mode === 'game' && S.L) updateSave(sv => PR.markStarted(sv, LEVELS[S.levelIndex].id));
+}
 
 function tick() {
+  if (S.paused) return;
   S.stateT += DT;
   updateParticles(DT);
-  if (S.state === 'loading' || S.state === 'error' || S.state === 'waiting') return;
+  if (S.state === 'loading' || S.state === 'error' || S.state === 'waiting' || S.state === 'menu') return;
   if (S.state !== 'play') {
     for (const pid of [1, 2]) S.ready[pid] = readyHeld(pid) ? Math.min(1, S.ready[pid] + DT / 0.6) : 0;
     jumpEdge[1] = jumpEdge[2] = false;
     if (S.stateT > 0.8 && S.ready[1] >= 1 && S.ready[2] >= 1) {
-      if (S.state === 'title') { loadLevel(S.startLevel); setState('play'); }
+      if (S.state === 'title') { loadLevel(S.levelIndex); startPlaying(); }
       else if (S.state === 'won') {
         if (S.mode !== 'game') { loadLevel(S.levelIndex); setState('play'); }   // a play-test or a shared level: again
-        else if (S.levelIndex + 1 < LEVELS.length) { loadLevel(S.levelIndex + 1); setState('play'); }
-        else setState('end');
-      } else if (S.state === 'end') { loadLevel(0); setState('play'); }
+        else {
+          const after = PR.afterWin(ids(), EDITION, SAVE, S.levelIndex);
+          if (after.next != null) { loadLevel(after.next); startPlaying(); }
+          else if (after.fullGame) showMenu('full', { back: 'home' });
+          else setState('end');
+        }
+      } else if (S.state === 'end') showMenu('home');
     }
     return;
   }
@@ -910,6 +965,39 @@ function panelFor(pid, lines, alpha = 1) {
   });
   ctx.restore();
 }
+// "Level complete!": a cream card with both friends celebrating, facing each seat
+function completeCard(pid, line, k) {
+  ctx.save();
+  ctx.globalAlpha = k;
+  ctx.translate(gx + gw / 2, mapY + mapH / 2);
+  if (pid === 2) ctx.rotate(Math.PI);
+  const pw = Math.min(gw - 30, 330), ph = Math.min(mapH * 0.44, 190);
+  ctx.translate(0, Math.max(ph / 2 + 8, mapH * 0.25) - (1 - k) * 12);   // in the seat's half, clear of the other card
+  rr(ctx, -pw / 2, -ph / 2 + 5, pw, ph, 24); ctx.fillStyle = 'rgba(20,14,36,0.45)'; ctx.fill();
+  const gr = ctx.createLinearGradient(0, -ph / 2, 0, ph / 2);
+  gr.addColorStop(0, '#FFFAF4'); gr.addColorStop(1, '#FBE6DA');
+  rr(ctx, -pw / 2, -ph / 2, pw, ph, 24); ctx.fillStyle = gr; ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = P.outline; ctx.stroke();
+  // a soft burst of light behind the friends
+  const cy = -ph * 0.1, rad = ph * 0.32;
+  const glow = ctx.createRadialGradient(0, cy, 2, 0, cy, rad * 1.6);
+  glow.addColorStop(0, 'rgba(255,214,122,0.75)'); glow.addColorStop(1, 'rgba(255,214,122,0)');
+  ctx.fillStyle = glow; ctx.fillRect(-pw / 2 + 6, -ph / 2 + 30, pw - 12, ph * 0.62);
+  const T = performance.now() / 1000, bob = reduceMotion ? 0 : Math.sin(T * 6) * 3, sz = Math.min(ph * 0.34, 62);
+  for (const [who, dx] of [[2, -1], [1, 1]]) {
+    ctx.save(); ctx.translate(dx * sz * 0.72, cy + (dx > 0 ? -bob : bob));
+    A.character(ctx, sz * 0.82, sz, who === 1, { frame: 'celebrate', facing: -dx });
+    ctx.restore();
+  }
+  for (let i = 0; i < 6; i++) A.star4(ctx, Math.cos(i * 1.05 + (reduceMotion ? 0 : T)) * pw * 0.36, cy + Math.sin(i * 2.1) * ph * 0.22, 4 + (i % 3) * 2, '#FFD27A');
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = P.outline;
+  ctx.font = `900 ${Math.round(Math.min(30, pw * 0.095))}px ${FONT}`;
+  ctx.fillText('Level complete!', 0, -ph / 2 + 24);
+  ctx.font = `800 ${Math.round(Math.min(16, pw * 0.05))}px ${FONT}`;
+  ctx.fillText(line, 0, ph / 2 - 20);
+  ctx.restore();
+}
 function wrapText(text, max) {
   const out = [];
   let line = '';
@@ -938,23 +1026,24 @@ function drawOverlay() {
     both(pid => panelFor(pid, ['Play-test', 'Waiting for the editor…']));
   } else if (S.state === 'title') {
     dim();
-    both(pid => panelFor(pid, ['UPSIDE', pid === 1 ? 'You are BLACK. You fall toward you.' : 'You are WHITE. You fall toward you.', 'Both hold your band to start']));
+    if (S.mode === 'game') both(pid => panelFor(pid, [`Level ${S.levelIndex + 1}`, S.L.name, 'Both hold your band to start']));
+    else both(pid => panelFor(pid, ['UPSIDE', pid === 1 ? 'You are BLACK. You fall toward you.' : 'You are WHITE. You fall toward you.', 'Both hold your band to start']));
     const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
     if (fine) {
       ctx.fillStyle = P.light; ctx.font = `700 12px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('Keys  Black: A D W   White: ← → ↓   Space: ready   R: restart   M: mute', gx + gw / 2, mapY + mapH / 2);
+      ctx.fillText('Keys  Black: A D W   White: ← → ↓   Space: ready   R: restart   Esc: pause', gx + gw / 2, mapY + mapH / 2);
     }
   } else if (S.state === 'won') {
-    const last = S.levelIndex + 1 >= LEVELS.length;
-    const next = S.mode !== 'game' ? 'Both hold to play it again' : last ? 'Both hold to celebrate' : 'Both hold for the next level';
-    both(pid => panelFor(pid, ['Yay! You did it together', next]));
+    let next = 'Both hold to play it again';
+    if (S.mode === 'game') {
+      const after = PR.afterWin(ids(), EDITION, SAVE, S.levelIndex);
+      next = after.next != null ? 'Both hold for the next level' : after.fullGame ? 'Both hold to see what\'s next' : 'Both hold to celebrate';
+    }
+    if (S.stateT > 0.35) both(pid => completeCard(pid, next, Math.min(1, (S.stateT - 0.35) / 0.3)));
   } else if (S.state === 'end') {
     dim();
-    const more = (EDITION.fullLevels || 0) - LEVELS.length;
-    both(pid => panelFor(pid, EDITION.edition === 'demo'
-      ? ['Demo complete!', more > 0 ? `${more} more levels in the full game` : 'More levels in the full game', 'Both hold to play again']
-      : ['Best friends!', 'You finished every level!', 'Both hold to play again']));
-  } else if (S.banner > 0) {
+    both(pid => panelFor(pid, ['Best friends!', 'You finished every level!', 'Both hold to go home']));
+  } else if (S.banner > 0 && !S.paused) {
     const a = Math.min(1, S.banner / 0.5);
     const title = S.mode === 'playtest' ? 'Play-test' : S.mode === 'shared' ? 'A shared level' : `Level ${S.levelIndex + 1} of ${LEVELS.length}`;
     both(pid => panelFor(pid, [title, S.L.name], a));
@@ -983,9 +1072,13 @@ function drawOverlay() {
     }
     ctx.restore();
   }
-  // mute toggle (map's right edge, middle)
-  const mx = u.mute.x, my = u.mute.y;
-  if (A.utility(ctx, mx, my, 18, 'sound')) {
+  // the middle button: pause in the game, sound in a play-test or a shared level
+  const mx = u.mid.x, my = u.mid.y;
+  if (S.mode === 'game') {
+    const ink = roundButton(mx, my, 16, 'stone');
+    ctx.fillStyle = ink;
+    rr(ctx, mx - 6, my - 7, 4.5, 14, 1.5); ctx.fill(); rr(ctx, mx + 1.5, my - 7, 4.5, 14, 1.5); ctx.fill();
+  } else if (A.utility(ctx, mx, my, 18, 'sound')) {
     if (muted) {                                                         // muted: a cross over the waves
       ctx.strokeStyle = P.light; ctx.lineWidth = 3; ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(mx + 3, my - 5); ctx.lineTo(mx + 11, my + 5); ctx.moveTo(mx + 11, my - 5); ctx.lineTo(mx + 3, my + 5); ctx.stroke();
@@ -1002,6 +1095,7 @@ function drawOverlay() {
 
 function render(t) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (S.state === 'menu') return;                // the menu covers everything
   ctx.fillStyle = C.stage; ctx.fillRect(0, 0, W, H);
   if (staticLayer) ctx.drawImage(staticLayer, gx, mapY, gw, mapH);   // stone, sky, walls and thorns
   drawDots(t);
@@ -1010,13 +1104,112 @@ function render(t) {
   drawOverlay();
 }
 
+/* ---- small pictures of levels, for the menus: the level cards and How to Play ---- */
+// Draws a level (a parsed map) into g, fitted inside w x h. look: pressed / open (per door letter, 0..1),
+// players (p1, p2: { x, lift, frame, facing } in tiles; default at their starts), active exits, t.
+function drawScene(g, L, w, h, look = {}) {
+  const ts = Math.min(w / L.w, h / L.h), ox = (w - ts * L.w) / 2, oy = (h - ts * L.h) / 2;
+  A.stone(g, 0, 0, w, h, ts * 2, ox, oy);
+  g.save(); g.beginPath(); g.rect(ox, oy, L.w * ts, L.h * ts); g.clip();
+  A.sky(g, ox, oy, L.w * ts, L.h * ts, 7);
+  g.restore();
+  const tile = (x, y) => x >= 0 && y >= 0 && x < L.w && y < L.h ? L.tiles[y * L.w + x] : 1;
+  const open = (x, y) => tile(x, y) !== 1;
+  const busy = new Set();
+  for (const pl of L.plates) busy.add(pl.y * L.w + pl.x);
+  for (const d of L.doors) for (const c of d.cells) busy.add(c.y * L.w + c.x);
+  const plain = (x, y) => tile(x, y) === 0 && !busy.has(y * L.w + x);
+  g.save(); g.translate(ox, oy);
+  for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {
+    const t = tile(x, y);
+    if (t === 1) A.wall(g, x * ts, y * ts, ts, { tx: x, ty: y, up: open(x, y - 1), down: open(x, y + 1), left: open(x - 1, y), right: open(x + 1, y), grass: plain(x, y - 1), vines: plain(x, y + 1) });
+    else if (t === 2 || t === 3) A.thorns(g, x * ts, y * ts, ts, t === 2);
+  }
+  const pressed = look.pressed || {}, opened = look.open || {};
+  g.lineCap = 'round'; g.setLineDash([0.01, ts * 0.32]); g.lineWidth = Math.max(1.5, ts * 0.1);
+  for (const pl of L.plates) for (const d of L.doors) if (d.id === pl.id) {
+    g.strokeStyle = pressed[pl.id] ? P.cyan : 'rgba(244,248,255,0.9)';
+    g.beginPath(); g.moveTo((pl.x + 0.5) * ts, (pl.y + 0.5) * ts); g.lineTo((d.rect.x + d.rect.w / 2) * ts, (d.rect.y + d.rect.h / 2) * ts); g.stroke();
+  }
+  g.setLineDash([]);
+  for (const pl of L.plates) {
+    A.plate(g, pl.x * ts, pl.y * ts, ts, pl.side, !!pressed[pl.id]);
+    A.indicator(g, SYMBOL[pl.id], (pl.x + 0.5) * ts, (pl.side === 'floor' ? pl.y + 0.28 : pl.y + 0.72) * ts, ts * 0.48, !!pressed[pl.id]);
+  }
+  for (const d of L.doors) {
+    const r = d.rect, closed = 1 - (opened[d.id] || 0);
+    if (closed < 0.04) continue;
+    const sym = closed > 0.35 ? SYMBOL[d.id] : null;
+    if (d.dir === 'v') { const hh = r.h * closed, y0 = d.anchor === 'top' ? r.y : r.y + r.h - hh; A.door(g, (r.x + 0.1) * ts, y0 * ts, ts * (r.w - 0.2), ts * hh, ts, sym); }
+    else A.door(g, r.x * ts, (r.y + 0.1) * ts, ts * r.w * closed, ts * (r.h - 0.2), ts, sym, 'h');
+  }
+  for (const who of [1, 2]) {
+    const e = L.exits[who]; if (!e) continue;
+    g.save(); g.translate((e.x + 0.5) * ts, (e.y + 0.5) * ts); if (who === 2) g.rotate(Math.PI);
+    A.portal(g, ts, who === 1, !!(look.active && look.active[who]), look.t || 0);
+    g.restore();
+  }
+  for (const c of L.crateDefs) A.crate(g, (c.x + 0.02) * ts, (c.y + 0.04) * ts, CS * ts, c.owner === 1);
+  for (const who of [1, 2]) {
+    const sp = L.spawns[who]; if (!sp) continue;
+    const pl = (who === 1 ? look.p1 : look.p2) || {};
+    const x = pl.x != null ? pl.x : sp.x + 0.5, lift = pl.lift || 0;
+    const y = who === 1 ? sp.y + 1 - PH / 2 - lift : sp.y + PH / 2 + lift;
+    g.save(); g.translate(x * ts, y * ts); if (who === 2) g.rotate(Math.PI);
+    A.character(g, PW * ts, PH * ts, who === 1, { frame: pl.frame || 'idle', facing: pl.facing || 1 });
+    g.restore();
+  }
+  g.restore();
+}
+const thumbCache = new Map();
+function drawThumb(cv, def) {
+  const g = cv.getContext('2d');
+  const paint = () => { g.clearRect(0, 0, cv.width, cv.height); drawScene(g, parseLevel(def.map ? def : { map: def }), cv.width, cv.height); };
+  paint();
+  if (!A.ready()) A.onReady(paint);
+}
+// How to Play: three little scenes, made as tiny levels, animated on a loop
+const TIPS = {
+  move: ['########', '#2     #', '#      #', '#1     #', '########'],
+  plates: ['########', '#2a B Y#', '#      #', '#1b A X#', '########'],
+  exits: ['########', '#2    Y#', '#      #', '#1    X#', '########'],
+};
+const tipLevels = {};
+function drawTip(cv, which, t) {
+  const L = tipLevels[which] || (tipLevels[which] = parseLevel({ name: which, map: TIPS[which] }));
+  const g = cv.getContext('2d');
+  const run = (k) => (Math.floor(t * 8) % 2 ? 'run2' : 'run1');
+  const ease = k => k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k);
+  let look = { t };
+  if (which === 'move') {
+    const k = Math.sin(t * 1.3), v = Math.cos(t * 1.3);
+    const jp = (t % 2.6) / 2.6, lift = jp < 0.3 ? Math.sin(jp / 0.3 * Math.PI) * 1.2 : 0;
+    look.p1 = { x: 4 + 2.3 * k, frame: lift > 0.05 ? 'jump' : run(), facing: v >= 0 ? 1 : -1, lift };
+    look.p2 = { x: 4 - 2.3 * k, frame: run(), facing: v >= 0 ? 1 : -1 };     // White is upside down: her right is our left
+  } else if (which === 'plates') {
+    const c = t % 6, walk = ease(c / 1.1) - ease((c - 4.4) / 1.1);           // walk onto the plate, wait, walk back
+    const on = walk > 0.75;
+    const doorK = c < 1 ? 0 : c < 4.4 ? ease((c - 0.9) / 0.5) : 1 - ease((c - 4.4) / 0.4);
+    look.p1 = { x: 1.5 + walk, frame: walk > 0.02 && walk < 0.98 ? run() : 'idle', facing: c < 4.4 ? 1 : -1 };
+    look.p2 = { x: 1.5 + walk, frame: walk > 0.02 && walk < 0.98 ? run() : 'idle', facing: c < 4.4 ? -1 : 1 };
+    look.pressed = { a: on, b: on }; look.open = { a: on ? doorK : 0, b: on ? doorK : 0 };
+  } else {
+    const c = t % 5, walk = ease(c / 2.6), there = c > 2.6;
+    look.p1 = { x: 1.5 + 5 * walk, frame: there ? 'celebrate' : run(), facing: 1 };
+    look.p2 = { x: 1.5 + 5 * walk, frame: there ? 'celebrate' : run(), facing: -1 };
+    look.active = { 1: there, 2: there };
+  }
+  drawScene(g, L, cv.width, cv.height, look);
+}
+
 /* ============================================================
    MAIN LOOP
    ============================================================ */
 let manual = false, acc = 0, last = performance.now();
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (!manual) { acc += dt; while (acc >= DT) { tick(); acc -= DT; } }
+  // "Slower game" (Settings): the same physics, run at three quarters of the speed
+  if (!manual) { acc += dt * (S.mode === 'game' && SAVE.settings.speed === 'slow' ? 0.75 : 1); while (acc >= DT) { tick(); acc -= DT; } }
   render(now / 1000);
   requestAnimationFrame(frame);
 }
@@ -1066,15 +1259,38 @@ function playCustom(def) {
 }
 
 S.mode = 'game';
+SAVE = PR.loadLocal(); applySettings();
 layout();
 canvas.focus();
 requestAnimationFrame(frame);
+
+// what the menus need from the game (menu.js)
+MENU.init({
+  ids, defs: () => LEVELS, edition: () => EDITION, save: () => SAVE, update: updateSave,
+  play: playFromMenu, drawThumb, drawTip,
+  click: () => { unlockAudio(); firstGesture(); sfx('click'); },
+  isApp: () => isApp || EDITION.edition === 'app',      // the app's purchase screens (a test purchase for now)
+  canVibrate: () => typeof navigator.vibrate === 'function',
+  canFullscreen: () => !isApp && !!document.fullscreenEnabled,
+  applyFullscreen,
+  pauseAction(what) {
+    S.paused = false;
+    if (what === 'restart') { loadLevel(S.levelIndex); if (S.state !== 'title') setState('play'); }
+    else if (what === 'home') showMenu('home');
+  },
+  // The full game. Until the store accounts exist this is a test purchase: it unlocks for free, on this device.
+  buy: () => { updateSave(sv => Object.assign({}, sv, { bought: true })); return Promise.resolve(true); },
+  restorePurchase: () => Promise.resolve(SAVE.bought ? 'Already unlocked' : 'Nothing to restore (test build)'),
+  priceNote: () => 'Test build: unlocking is free and only on this phone.',
+});
 
 // test + editor hooks
 window.UPSIDE = {
   S, loadLevel, ready: false,
   get LEVELS() { return LEVELS; },
   get EDITION() { return EDITION; },
+  get SAVE() { return SAVE; },
+  menu: MENU, showMenu, setPaused, updateSave,
   load(i) { loadLevel(i); setState('play'); },
   loadById(id) {
     const i = LEVELS.findIndex(l => l.id === id);
@@ -1103,11 +1319,13 @@ if (location.hash === '#playtest') {
   window.UPSIDE.ready = true;
 } else {
   setState('loading');
-  Promise.all([fetchLevels(), fetchEdition()]).then(([defs]) => {
-    LEVELS = defs;
+  Promise.all([fetchLevels(), fetchEdition(), PR.load()]).then(([defs, , save]) => {
+    LEVELS = defs; SAVE = save; applySettings();
     S.startLevel = startIndexFromHash();
     loadLevel(S.startLevel);
-    setState('title');
+    // a link to one level (#level-<id>) goes straight to it; otherwise the main menu
+    if (/^#level/.test(location.hash)) setState('title');
+    else showMenu('home');
     window.UPSIDE.ready = true;
   }).catch(err => {
     console.error(err);
