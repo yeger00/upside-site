@@ -56,7 +56,7 @@ const COYOTE = 0.15, BUFFER = 0.15;
 const PUSH_FACTOR = 0.6;
 const PW = 0.7, PH = 0.85, CS = 0.96;
 const EPS = 1e-4;
-const FONT = '"Nunito", "Trebuchet MS", system-ui, sans-serif';
+const FONT = '"Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif';
 
 const A = window.UpsideArt, P = A.P;          // the shared look (art.js): palette and drawing
 const C = { stage: P.stage, black: P.dark, white: P.light, machineLit: P.cyan };
@@ -574,19 +574,35 @@ function bandZones() {
   const f = [0, 1 / 3, 2 / 3, 1].map(v => m + v * iw);            // three equal buttons, as in the design
   return { left: [f[0], f[1]], right: [f[1], f[2]], jump: [f[2], f[3]] };
 }
-// small round buttons on the map's right edge: pause in the middle (sound in a play-test or a shared level),
-// each player's restart on their own side of it
+// small round buttons on the map's right edge: each player's restart, and further out on their own side their
+// menu button (in a play-test or a shared level: a sound button in the middle instead)
 function uiSpots() {
-  const x = gx + gw - 24, y = mapY + mapH / 2;
-  return { mid: { x, y }, r1: { x, y: y + 50 }, r2: { x, y: y - 50 } };
+  const x = gx + gw - 24, y = mapY + mapH / 2, far = Math.min(108, mapH / 2 - 26);
+  return { mid: { x, y }, r1: { x, y: y + 50 }, r2: { x, y: y - 50 }, m1: { x, y: y + far }, m2: { x, y: y - far } };
 }
 const canPause = () => S.mode === 'game' && (S.state === 'play' || S.state === 'title' || S.state === 'won');
-function setPaused(on) {
+function setPaused(on, pid) {
   if (on && !canPause()) return;
   S.paused = !!on;
   pointers.clear(); recompute();
-  MENU.pause(S.paused);
+  MENU.pause(S.paused, pid || 1);
 }
+// Back: Android's back button, the browser's, or Esc. One step back; on the main menu, a second press leaves.
+let leaveAsked = 0;
+function handleBack() {
+  if (MENU.isOpen()) {
+    if (MENU.back()) return true;
+    if (performance.now() - leaveAsked < 2200) return false;      // pressed again: let it leave
+    leaveAsked = performance.now(); MENU.toast('Press back again to leave');
+    return true;
+  }
+  if (S.paused) { setPaused(false); return true; }
+  if (canPause()) { setPaused(true, 1); return true; }
+  return false;
+}
+const CapApp = (() => { try { return isApp && window.Capacitor.Plugins && window.Capacitor.Plugins.App; } catch (e) { return null; } })();
+function quitApp() { try { if (CapApp) CapApp.exitApp(); } catch (e) {} }
+const menuImg = new Image(); menuImg.src = 'assets/ui/round-blank.webp';
 const hit = (p, x, y) => Math.hypot(x - p.x, y - p.y) < 22;
 function zoneAt(sx, sy) {
   if (sx < gx || sx > gx + gw) return null;
@@ -615,10 +631,10 @@ canvas.addEventListener('pointerdown', e => {
   const rec = z ? { player: z.player, zone: z.zone, t: performance.now() } : { player: 0 };
   if (!z) {
     const u = uiSpots();
-    if (hit(u.mid, e.clientX, e.clientY)) {
-      if (S.mode === 'game') setPaused(true);
-      else updateSave(sv => Object.assign({}, sv, { settings: Object.assign({}, sv.settings, { sound: !sv.settings.sound }) }));
-    }
+    if (S.mode === 'game' && hit(u.m1, e.clientX, e.clientY)) setPaused(true, 1);
+    else if (S.mode === 'game' && hit(u.m2, e.clientX, e.clientY)) setPaused(true, 2);
+    else if (S.mode !== 'game' && hit(u.mid, e.clientX, e.clientY))
+      updateSave(sv => Object.assign({}, sv, { settings: Object.assign({}, sv.settings, { sound: !sv.settings.sound }) }));
     else if (hit(u.r1, e.clientX, e.clientY)) rec.restartFor = 1;
     else if (hit(u.r2, e.clientX, e.clientY)) rec.restartFor = 2;
   }
@@ -645,8 +661,9 @@ document.addEventListener('gesturestart', e => e.preventDefault());
 
 window.addEventListener('keydown', e => {
   unlockAudio();
+  if (e.code === 'Escape') { e.preventDefault(); handleBack(); return; }
   if (MENU.isOpen()) return;                       // the menus handle their own keys
-  if (e.code === 'Escape' || e.code === 'KeyP') { if (S.paused) { setPaused(false); } else setPaused(true); e.preventDefault(); return; }
+  if (e.code === 'KeyP') { setPaused(!S.paused, 1); e.preventDefault(); return; }
   if (S.paused) return;
   if (e.repeat) { if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault(); return; }
   keys[e.code] = true;
@@ -707,20 +724,14 @@ function tick() {
   S.stateT += DT;
   updateParticles(DT);
   if (S.state === 'loading' || S.state === 'error' || S.state === 'waiting' || S.state === 'menu') return;
+  if (S.state === 'won' && S.mode === 'game' && S.stateT > 1.4) { showMenu('complete', { level: S.levelIndex }); return; }
   if (S.state !== 'play') {
     for (const pid of [1, 2]) S.ready[pid] = readyHeld(pid) ? Math.min(1, S.ready[pid] + DT / 0.6) : 0;
     jumpEdge[1] = jumpEdge[2] = false;
     if (S.stateT > 0.8 && S.ready[1] >= 1 && S.ready[2] >= 1) {
       if (S.state === 'title') { loadLevel(S.levelIndex); startPlaying(); }
-      else if (S.state === 'won') {
-        if (S.mode !== 'game') { loadLevel(S.levelIndex); setState('play'); }   // a play-test or a shared level: again
-        else {
-          const after = PR.afterWin(ids(), EDITION, SAVE, S.levelIndex);
-          if (after.next != null) { loadLevel(after.next); startPlaying(); }
-          else if (after.fullGame) showMenu('full', { back: 'home' });
-          else setState('end');
-        }
-      } else if (S.state === 'end') showMenu('home');
+      else if (S.state === 'won' && S.mode !== 'game') { loadLevel(S.levelIndex); setState('play'); }   // a play-test or a shared level: again
+      else if (S.state === 'end') showMenu('home');
     }
     return;
   }
@@ -1034,12 +1045,8 @@ function drawOverlay() {
       ctx.fillText('Keys  Black: A D W   White: ← → ↓   Space: ready   R: restart   Esc: pause', gx + gw / 2, mapY + mapH / 2);
     }
   } else if (S.state === 'won') {
-    let next = 'Both hold to play it again';
-    if (S.mode === 'game') {
-      const after = PR.afterWin(ids(), EDITION, SAVE, S.levelIndex);
-      next = after.next != null ? 'Both hold for the next level' : after.fullGame ? 'Both hold to see what\'s next' : 'Both hold to celebrate';
-    }
-    if (S.stateT > 0.35) both(pid => completeCard(pid, next, Math.min(1, (S.stateT - 0.35) / 0.3)));
+    // in the game, the friends celebrate for a moment and then the Level complete screen comes up
+    if (S.mode !== 'game' && S.stateT > 0.35) both(pid => completeCard(pid, 'Both hold to play it again', Math.min(1, (S.stateT - 0.35) / 0.3)));
   } else if (S.state === 'end') {
     dim();
     both(pid => panelFor(pid, ['Best friends!', 'You finished every level!', 'Both hold to go home']));
@@ -1072,12 +1079,19 @@ function drawOverlay() {
     }
     ctx.restore();
   }
-  // the middle button: pause in the game, sound in a play-test or a shared level
+  // each player's menu button (☰), facing their seat; in a play-test or a shared level, a sound button instead
   const mx = u.mid.x, my = u.mid.y;
   if (S.mode === 'game') {
-    const ink = roundButton(mx, my, 16, 'stone');
-    ctx.fillStyle = ink;
-    rr(ctx, mx - 6, my - 7, 4.5, 14, 1.5); ctx.fill(); rr(ctx, mx + 1.5, my - 7, 4.5, 14, 1.5); ctx.fill();
+    for (const pid of [1, 2]) {
+      const p = pid === 1 ? u.m1 : u.m2;
+      ctx.save(); ctx.translate(p.x, p.y); if (pid === 2) ctx.rotate(Math.PI);
+      ctx.globalAlpha = canPause() ? 1 : 0.5;
+      if (menuImg.complete && menuImg.naturalWidth) ctx.drawImage(menuImg, -21, -21, 42, 42);
+      else roundButton(0, 0, 19, 'light');
+      ctx.fillStyle = P.outline;
+      for (const dy of [-6.5, 0, 6.5]) { rr(ctx, -9, dy - 1.9 - 1, 18, 3.8, 1.9); ctx.fill(); }
+      ctx.restore();
+    }
   } else if (A.utility(ctx, mx, my, 18, 'sound')) {
     if (muted) {                                                         // muted: a cross over the waves
       ctx.strokeStyle = P.light; ctx.lineWidth = 3; ctx.lineCap = 'round';
@@ -1170,9 +1184,10 @@ function drawThumb(cv, def) {
 }
 // How to Play: three little scenes, made as tiny levels, animated on a loop
 const TIPS = {
-  move: ['########', '#2     #', '#      #', '#1     #', '########'],
-  plates: ['########', '#2a B Y#', '#      #', '#1b A X#', '########'],
-  exits: ['########', '#2    Y#', '#      #', '#1    X#', '########'],
+  move: ['########', '#2     #', '#      #', '#      #', '#1     #', '########'],
+  jump: ['########', '#2     #', '#      #', '#      #', '#1     #', '########'],
+  plates: ['########', '#2a B Y#', '#      #', '#      #', '#1b A X#', '########'],
+  exits: ['########', '#2    Y#', '#      #', '#      #', '#1    X#', '########'],
 };
 const tipLevels = {};
 function drawTip(cv, which, t) {
@@ -1186,6 +1201,12 @@ function drawTip(cv, which, t) {
     const jp = (t % 2.6) / 2.6, lift = jp < 0.3 ? Math.sin(jp / 0.3 * Math.PI) * 1.2 : 0;
     look.p1 = { x: 4 + 2.3 * k, frame: lift > 0.05 ? 'jump' : run(), facing: v >= 0 ? 1 : -1, lift };
     look.p2 = { x: 4 - 2.3 * k, frame: run(), facing: v >= 0 ? 1 : -1 };     // White is upside down: her right is our left
+  } else if (which === 'jump') {
+    // each jumps away from their own side, one after the other
+    const c = t % 2.4, hop = k => k > 0 && k < 0.7 ? Math.sin(k / 0.7 * Math.PI) * 1.7 : 0;
+    const l1 = hop(c), l2 = hop(c - 1.2);
+    look.p1 = { x: 2.5, frame: l1 > 0.05 ? 'jump' : 'idle', facing: 1, lift: l1 };
+    look.p2 = { x: 5.5, frame: l2 > 0.05 ? 'jump' : 'idle', facing: -1, lift: l2 };
   } else if (which === 'plates') {
     const c = t % 6, walk = ease(c / 1.1) - ease((c - 4.4) / 1.1);           // walk onto the plate, wait, walk back
     const on = walk > 0.75;
@@ -1264,6 +1285,9 @@ layout();
 canvas.focus();
 requestAnimationFrame(frame);
 
+// Android's back button (the app)
+if (CapApp) { try { CapApp.addListener('backButton', () => { if (!handleBack()) quitApp(); }); } catch (e) {} }
+
 // what the menus need from the game (menu.js)
 MENU.init({
   ids, defs: () => LEVELS, edition: () => EDITION, save: () => SAVE, update: updateSave,
@@ -1278,6 +1302,16 @@ MENU.init({
     if (what === 'restart') { loadLevel(S.levelIndex); if (S.state !== 'title') setState('play'); }
     else if (what === 'home') showMenu('home');
   },
+  completeAction(what) {
+    const after = PR.afterWin(ids(), EDITION, SAVE, S.levelIndex);
+    if (what === 'replay') playFromMenu(S.levelIndex);
+    else if (what === 'levels') showMenu('levels');
+    else if (after.next != null) playFromMenu(after.next);
+    else if (after.fullGame) showMenu('full', { back: 'home' });
+    else showMenu('home');
+  },
+  canQuit: () => !!CapApp && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android',
+  quit: quitApp,
   // The full game. Until the store accounts exist this is a test purchase: it unlocks for free, on this device.
   buy: () => { updateSave(sv => Object.assign({}, sv, { bought: true })); return Promise.resolve(true); },
   restorePurchase: () => Promise.resolve(SAVE.bought ? 'Already unlocked' : 'Nothing to restore (test build)'),
@@ -1290,7 +1324,7 @@ window.UPSIDE = {
   get LEVELS() { return LEVELS; },
   get EDITION() { return EDITION; },
   get SAVE() { return SAVE; },
-  menu: MENU, showMenu, setPaused, updateSave,
+  menu: MENU, showMenu, setPaused, updateSave, back: handleBack,
   load(i) { loadLevel(i); setState('play'); },
   loadById(id) {
     const i = LEVELS.findIndex(l => l.id === id);
@@ -1326,6 +1360,12 @@ if (location.hash === '#playtest') {
     // a link to one level (#level-<id>) goes straight to it; otherwise the main menu
     if (/^#level/.test(location.hash)) setState('title');
     else showMenu('home');
+    // Back in the browser steps back through the menus too (a page of history the game keeps for itself)
+    if (!CapApp && window.history && history.pushState) {
+      history.replaceState({ upside: 'base' }, '');
+      history.pushState({ upside: 'top' }, '');
+      window.addEventListener('popstate', () => { if (handleBack()) history.pushState({ upside: 'top' }, ''); else history.back(); });
+    }
     window.UPSIDE.ready = true;
   }).catch(err => {
     console.error(err);
