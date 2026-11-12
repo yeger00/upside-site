@@ -290,8 +290,7 @@
   function toggleSetting(key) {
     G.update(sv => {
       const st = Object.assign({}, sv.settings);
-      if (key === 'speed') st.speed = st.speed === 'slow' ? 'normal' : 'slow';
-      else st[key] = !st[key];
+      st[key] = !st[key];
       return Object.assign({}, sv, { settings: st });
     });
     if (key === 'fullscreen') G.applyFullscreen();

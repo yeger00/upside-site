@@ -19,7 +19,7 @@
     last: null,            // id of the level played most recently
     bought: false,         // the full game is unlocked (the app's purchase)
     seenHowTo: false,      // How to Play has been shown once
-    settings: { sound: true, vibration: true, fullscreen: true, speed: 'normal' },
+    settings: { sound: true, vibration: true, fullscreen: true },   // only sound has a button now; the others stay on
     t: 0,                  // when this was saved (to pick the newer of two copies)
   });
 
@@ -32,7 +32,9 @@
       finished: ids(s.finished), started: ids(s.started),
       last: typeof s.last === 'string' ? s.last : null,
       bought: s.bought === true, seenHowTo: s.seenHowTo === true,
-      settings: Object.assign({}, b.settings, s.settings && typeof s.settings === 'object' ? s.settings : {}),
+      // only sound is kept: the old Settings screen (vibration, fullscreen, a slower game) is gone, so a choice
+      // made there must not stay stuck with no way to change it
+      settings: Object.assign({}, b.settings, s.settings && typeof s.settings.sound === 'boolean' ? { sound: s.settings.sound } : {}),
       t: +s.t || 0,
     };
   }

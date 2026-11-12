@@ -1213,8 +1213,7 @@ function drawTip(cv, which, t) {
 let manual = false, acc = 0, last = performance.now();
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  // "Slower game" (Settings): the same physics, run at three quarters of the speed
-  if (!manual) { acc += dt * (S.mode === 'game' && SAVE.settings.speed === 'slow' ? 0.75 : 1); while (acc >= DT) { tick(); acc -= DT; } }
+  if (!manual) { acc += dt; while (acc >= DT) { tick(); acc -= DT; } }
   render(now / 1000);
   requestAnimationFrame(frame);
 }
