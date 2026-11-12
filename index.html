@@ -523,7 +523,7 @@ function buildStatic() {
     g.restore();
     const tile = (x, y) => x >= 0 && y >= 0 && x < L.w && y < L.h ? L.tiles[y * L.w + x] : 1;
     const open = (x, y) => tile(x, y) !== 1;
-    const plain = (x, y) => tile(x, y) === 0;     // grass wherever the wall meets open air, pads and doors too, so it runs on unbroken
+    const plain = (x, y) => tile(x, y) !== 1;     // grass wherever the wall meets open air (thorns, pads and doors too), unbroken
     g.translate(ox, oy);
     for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) if (tile(x, y) === 1)
       A.wall(g, x * TS, y * TS, TS, { tx: x, ty: y, up: open(x, y - 1), down: open(x, y + 1), left: open(x - 1, y), right: open(x + 1, y),
@@ -1116,7 +1116,7 @@ function drawScene(g, L, w, h, look = {}) {
   g.restore();
   const tile = (x, y) => x >= 0 && y >= 0 && x < L.w && y < L.h ? L.tiles[y * L.w + x] : 1;
   const open = (x, y) => tile(x, y) !== 1;
-  const plain = (x, y) => tile(x, y) === 0;
+  const plain = (x, y) => tile(x, y) !== 1;
   g.save(); g.translate(ox, oy);
   for (let y = 0; y < L.h; y++) for (let x = 0; x < L.w; x++) {
     const t = tile(x, y);

@@ -309,7 +309,7 @@ function draw() {
   ctx.stroke();
   const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h) ? '#' : E.map[y][x];
   // walls, as in the game: outlined where they meet open space, grass on top and leaves underneath
-  const open = (x, y) => at(x, y) !== '#', plain = (x, y) => ' 12XYKWabcdABCD'.includes(at(x, y));   // grass under pads and by doors too
+  const open = (x, y) => at(x, y) !== '#', plain = (x, y) => at(x, y) !== '#';   // grass wherever the wall meets open air, under thorns, pads and doors too
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (at(x, y) === '#')
     A.wall(ctx, x * ts, y * ts, ts, { tx: x, ty: y, dim: isEdge(x, y), up: open(x, y - 1), down: open(x, y + 1), left: open(x - 1, y), right: open(x + 1, y),
                                       grass: plain(x, y - 1), vines: plain(x, y + 1) });

@@ -381,9 +381,14 @@
   function wall(g, x, y, ts, o) {
     if (!loaded) return vWall(g, x, y, ts, o);
     g.fillStyle = '#7C6AA5'; g.fillRect(x, y, ts + 0.5, ts + 0.5);
-    if (o.up && o.grass !== false) spr(g, 'tile-grass-stone', x, y, ts, ts);
-    else if (o.down && o.vines !== false && !o.up) { g.save(); g.translate(x, y + ts); g.scale(1, -1); spr(g, 'tile-grass-stone', 0, 0, ts, ts); g.restore(); }
-    else spr(g, 'tile-bricks', x, y, ts, ts);
+    const grassTop = o.up && o.grass !== false, grassBottom = o.down && o.vines !== false;
+    if (grassTop) spr(g, 'tile-grass-stone', x, y, ts, ts);
+    if (grassBottom) {                        // hanging grass underneath; on a one-tile-thick ledge, only its lower half
+      g.save();
+      if (grassTop) { g.beginPath(); g.rect(x, y + ts * 0.5, ts + 0.5, ts * 0.5 + 0.5); g.clip(); }
+      g.translate(x, y + ts); g.scale(1, -1); spr(g, 'tile-grass-stone', 0, 0, ts, ts); g.restore();
+    }
+    if (!grassTop && !grassBottom) spr(g, 'tile-bricks', x, y, ts, ts);
     if (o.dim) { g.fillStyle = 'rgba(45,35,64,0.22)'; g.fillRect(x, y, ts + 0.5, ts + 0.5); }
   }
   // A pressure pad on the floor or the ceiling of its tile.
