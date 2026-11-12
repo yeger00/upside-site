@@ -25,6 +25,8 @@
     unlock: 'M7 10V7a5 5 0 019.6-2l-2.2 1A2.6 2.6 0 009.5 7v3H19a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2zm5 4a2 2 0 00-1 3.7V19h2v-1.3A2 2 0 0012 14z',
     person: 'M12 2.5a4.8 4.8 0 110 9.6 4.8 4.8 0 010-9.6zM3 21.5c0-4.6 4-7.5 9-7.5s9 2.9 9 7.5z',
     quit: 'M4 3h10v4h-2.4V5.4H6.4v13.2h5.2V17H14v4H4zm11.5 4.5L21 12l-5.5 4.5V13.3H9v-2.6h6.5z',
+    film: 'M3 4h18v16H3zm2 2v2h2V6zm12 0v2h2V6zM5 10v4h14v-4zm0 6v2h2v-2zm12 0v2h2v-2zM9 6v2h6V6zm0 10v2h6v-2z',
+    skip: 'M3 5l9 7-9 7zm9 0l9 7-9 7z',
   };
   const svg = name => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[name]}"/></svg>`;
   const LOCK = `<svg class="lock" viewBox="0 0 64 70" aria-hidden="true"><path d="M18 30V20a14 14 0 0128 0v10" fill="none" stroke="#3a2550" stroke-width="9"/><path d="M18 30V20a14 14 0 0128 0v10" fill="none" stroke="#fff6ec" stroke-width="3.5"/><rect x="7" y="28" width="50" height="38" rx="10" fill="#fff6ec" stroke="#3a2550" stroke-width="5"/><circle cx="32" cy="44" r="5.5" fill="#3a2550"/><rect x="29.5" y="46" width="5" height="10" rx="2.5" fill="#3a2550"/></svg>`;
@@ -32,6 +34,7 @@
   const btn = (go, icon, label, cls = '') => `<button class="btn ${cls}" ${go}>${icon ? `<span class="ic">${svg(icon)}</span><span class="div"></span>` : ''}<span class="label">${label}</span></button>`;
   const crest = (title, cls = 'small') => `<div class="crest ${cls}"><img src="assets/ui/crest.webp" alt=""><div class="title">${title}</div></div>`;
 
+  let storyEl = null, storyVid = null, storyDone = null, storySkipT = 0;
   let G = null, root = null, pauseEl = null, toastEl = null, current = null, opts = {}, levelPage = 0, selected = null, tipsRAF = 0, pausePid = 1;
   const scr = {};
 
@@ -48,6 +51,7 @@
       <div class="grow"></div>
       <div class="pills">
         <button class="pill" data-go="credits">${svg('person')}<span>Credits</span></button>
+        <button class="pill" data-go="story">${svg('film')}<span>Story</span></button>
         <button class="pill" data-go="full" hidden>${svg('star')}<span>Full game</span></button>
         <button class="pill" data-quit hidden>${svg('quit')}<span>Quit</span></button>
       </div>
@@ -79,6 +83,7 @@
         <p>A puzzle game for two friends<br>and one phone.</p>
         <p><b>Made by</b> yeger00</p>
         <p><b>Font</b> Fredoka, by Milena Brandão<br><span class="note">SIL Open Font License</span></p>
+        <p class="note">Story sounds: “Impact Explosion Boom Magic Gas sizzle acid” by ryusa and “Rocks Rolling - Designed Rocks” by GregorQuendel (freesound.org), CC BY 4.0</p>
         <p class="note">${VERSION}</p>
       </div>
       <div class="grow"></div>
@@ -117,6 +122,18 @@
     document.body.appendChild(pauseEl);
     toastEl = el(`<div class="toast" aria-live="polite"></div>`);
     document.body.appendChild(toastEl);
+    storyEl = el(`<div class="story" id="story" aria-hidden="true" role="dialog" aria-label="The story">
+      <div class="frame"><video playsinline preload="none" poster="assets/story/intro.jpg"></video>
+        <button class="skip" data-skip>Skip ${svg('skip')}</button></div></div>`);
+    document.body.appendChild(storyEl);
+    storyVid = storyEl.querySelector('video');
+    storyEl.querySelector('[data-skip]').addEventListener('click', () => { G.click(); endStory(); });
+    storyVid.addEventListener('ended', endStory);
+    storyVid.addEventListener('error', endStory);
+    document.addEventListener('visibilitychange', () => {   // the app goes to the background: wait for it
+      if (!storyDone) return;
+      if (document.hidden) storyVid.pause(); else storyVid.play().catch(() => {});
+    });
 
     root.addEventListener('click', onClick);
     pauseEl.addEventListener('click', e => {
@@ -149,6 +166,7 @@
   }
   // Back (Android's back button, the browser's, Esc): one step back. false on the main menu (the game decides).
   function back() {
+    if (storyDone) { G.click(); endStory(); return true; }   // Back skips the story
     if (!current) return false;
     if (current === 'home') return false;
     G.click();
@@ -180,6 +198,7 @@
       G.click();
       const where = go.dataset.go;
       if (where === 'play') playNext();
+      else if (where === 'story') story(() => {});
       else open(where, where === 'full' ? { back: 'home' } : undefined);
       return;
     }
@@ -210,8 +229,37 @@
   function playNext() {
     const i = PR.playIndex(G.ids(), G.edition(), G.save());
     if (i == null) { open(fullGameLocked() ? 'full' : 'levels', { back: 'home' }); return; }
+    if (!G.save().seenStory) { G.update(s => Object.assign({}, s, { seenStory: true })); story(playNext); return; }   // once, before the first level
     if (!G.save().seenHowTo) { open('howto', { thenPlay: i }); return; }
     close(); G.play(i);
+  }
+
+  /* ---- the story: the opening film (assets/story/intro.mp4), over the menus. It plays by itself once, on the
+     first Play; the main menu's Story button plays it again. Skip (or Back) ends it; then() runs when it ends.
+     On a phone held upright it turns sideways to fill the screen, the same way round for both players. ---- */
+  function story(then) {
+    if (storyDone) return;
+    storyDone = then || (() => {});
+    storyEl.classList.add('open'); storyEl.setAttribute('aria-hidden', 'false');
+    const v = storyVid, skip = storyEl.querySelector('[data-skip]');
+    if (!v.getAttribute('src')) { v.preload = 'auto'; v.src = 'assets/story/intro.mp4'; }
+    try { v.currentTime = 0; } catch (e) {}
+    v.muted = !G.save().settings.sound;
+    skip.classList.remove('on');
+    clearTimeout(storySkipT); storySkipT = setTimeout(() => skip.classList.add('on'), 700);
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {           // no sound allowed yet: play it silently; if even that fails, go on
+      if (!storyDone) return;
+      v.muted = true; v.play().catch(() => endStory());
+    });
+  }
+  function endStory() {
+    if (!storyDone) return;
+    const then = storyDone; storyDone = null;
+    clearTimeout(storySkipT);
+    storyVid.pause();
+    storyEl.classList.remove('open'); storyEl.setAttribute('aria-hidden', 'true');
+    then();
   }
 
   /* ---- levels ---- */
@@ -374,5 +422,5 @@
     return Promise.race([Promise.all([...pics, font]), limit]);
   }
 
-  window.UpsideMenu = { init, open, close, isOpen, isPauseOpen, pause, back, toast, preload, get current() { return current; }, get selected() { return selected; } };
+  window.UpsideMenu = { init, open, close, isOpen, isPauseOpen, pause, back, toast, preload, story, skipStory: endStory, isStoryOpen: () => !!storyDone, get current() { return current; }, get selected() { return selected; } };
 })();

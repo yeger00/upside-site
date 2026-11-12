@@ -9,7 +9,7 @@
   --ink: #3a2550;
   --menu-font: "Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif;
 }
-.menu, .pause, .toast {
+.menu, .pause, .toast, .story {
   font-family: var(--menu-font); color: var(--ink); font-weight: 600;
   -webkit-user-select: none; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
@@ -51,7 +51,7 @@
 .btn:focus-visible, .pill:focus-visible, .round:focus-visible, .card:focus-visible { outline: calc(6 * var(--k)) solid #ffd27a; outline-offset: calc(2 * var(--k)); border-radius: calc(40 * var(--k)); }
 
 /* small pills (Credits, Quit) and the purple pill (Reset progress) */
-.pills { display: flex; gap: calc(40 * var(--k)); flex: 0 0 auto; }
+.pills { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(24 * var(--k)) calc(40 * var(--k)); flex: 0 0 auto; max-width: calc(880 * var(--k)); }
 .pill { position: relative; display: flex; align-items: center; justify-content: center; gap: calc(14 * var(--k)); border: 0; padding: 0 0 calc(8 * var(--k)); cursor: pointer;
   width: calc(273 * var(--k)); height: calc(93 * var(--k)); background: url(assets/ui/pill.webp) center / 100% 100% no-repeat; font-weight: 700; font-size: calc(38 * var(--k)); }
 .pill svg { width: calc(40 * var(--k)); height: calc(40 * var(--k)); fill: var(--ink); }
@@ -143,3 +143,16 @@
 .toast.on { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) { .card.sel { animation: none; } .track { transition: none; } }
+
+/* ---- the story (opening film): fills the screen; on an upright phone it turns sideways ---- */
+.story { position: fixed; inset: 0; z-index: 8; display: none; background: #231A36; }
+.story.open { display: block; }
+.story .frame { position: absolute; left: 50%; top: 50%; width: 100vw; height: 100vh; transform: translate(-50%, -50%); }
+@media (orientation: portrait) { .story .frame { width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(90deg); } }
+.story video { display: block; width: 100%; height: 100%; object-fit: contain; background: #231A36; }
+.story .skip { position: absolute; right: 16px; top: 16px; display: flex; align-items: center; gap: 8px; padding: 9px 16px 10px 20px;
+  border: 3px solid #231A36; border-radius: 999px; background: #fff6ec; color: var(--ink); font: 700 18px var(--menu-font);
+  box-shadow: 0 4px 0 #231A36; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.3s; -webkit-tap-highlight-color: transparent; }
+.story .skip.on { opacity: 0.92; pointer-events: auto; }
+.story .skip:active { transform: translateY(2px); box-shadow: 0 2px 0 #231A36; }
+.story .skip svg { width: 18px; height: 18px; fill: currentColor; }

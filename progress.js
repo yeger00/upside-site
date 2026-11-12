@@ -19,6 +19,7 @@
     last: null,            // id of the level played most recently
     bought: false,         // the full game is unlocked (the app's purchase)
     seenHowTo: false,      // How to Play has been shown once
+    seenStory: false,      // the opening film has played once (on the first Play)
     settings: { sound: true, vibration: true, fullscreen: true },   // only sound has a button now; the others stay on
     t: 0,                  // when this was saved (to pick the newer of two copies)
   });
@@ -31,7 +32,7 @@
       v: 1,
       finished: ids(s.finished), started: ids(s.started),
       last: typeof s.last === 'string' ? s.last : null,
-      bought: s.bought === true, seenHowTo: s.seenHowTo === true,
+      bought: s.bought === true, seenHowTo: s.seenHowTo === true, seenStory: s.seenStory === true,
       // only sound is kept: the old Settings screen (vibration, fullscreen, a slower game) is gone, so a choice
       // made there must not stay stuck with no way to change it
       settings: Object.assign({}, b.settings, s.settings && typeof s.settings.sound === 'boolean' ? { sound: s.settings.sound } : {}),
@@ -97,7 +98,7 @@
   const add = (list, id) => list.includes(id) ? list : list.concat(id);
   function markStarted(save, id) { return Object.assign({}, save, { started: add(save.started, id), last: id }); }
   function markFinished(save, id) { return Object.assign({}, save, { finished: add(save.finished, id), started: add(save.started, id), last: id }); }
-  function resetProgress(save) { const b = blank(); return Object.assign({}, save, { finished: b.finished, started: b.started, last: null, seenHowTo: false }); }
+  function resetProgress(save) { const b = blank(); return Object.assign({}, save, { finished: b.finished, started: b.started, last: null, seenHowTo: false, seenStory: false }); }
 
   // ---- storing it ----
   // localStorage in the browser; in the app also Capacitor's Preferences, which the phone never clears.
