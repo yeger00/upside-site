@@ -97,10 +97,9 @@
       <div class="grow"></div>
       <div class="hero" style="width:calc(600 * var(--k))"><img src="assets/ui/complete-hero.webp" alt="Level complete!"></div>
       <div class="donecard" style="width:calc(580 * var(--k))"><img src="assets/ui/complete-card.webp" alt=""><div class="tab"></div><div class="big"></div><div class="small"></div></div>
-      <div class="grow"></div>
+      <div style="height:calc(40 * var(--k))"></div>
       ${btn('data-complete="next"', 'play', 'Next Level')}
-      ${btn('data-complete="replay"', 'restart', 'Replay')}
-      ${btn('data-complete="levels"', 'levels', 'Level Select')}
+      <div class="grow"></div>
     </section>`);
     for (const s of Object.values(scr)) root.appendChild(s);
     document.body.appendChild(root);

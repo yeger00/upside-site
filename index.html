@@ -906,6 +906,7 @@ function drawBand(pid) {
   ctx.fillStyle = P.outline; ctx.fillRect(0, 0, gw, 3);                 // the edge between the band and the map
   const top = 12, bot = bandH - 12, zh_ = bot - top;
 
+  if (S.state === 'won' && S.mode === 'game') { ctx.restore(); return; }   // the level is over: Level complete comes next, nothing to hold
   if (S.state !== 'play') {
     const m = 18, x = m, w = gw - 2 * m;
     const prog = S.ready[pid];
@@ -1287,9 +1288,7 @@ MENU.init({
   },
   completeAction(what) {
     const after = PR.afterWin(ids(), EDITION, SAVE, S.levelIndex);
-    if (what === 'replay') playFromMenu(S.levelIndex);
-    else if (what === 'levels') showMenu('levels');
-    else if (after.next != null) playFromMenu(after.next);
+    if (after.next != null) playFromMenu(after.next);
     else if (after.fullGame) showMenu('full', { back: 'home' });
     else showMenu('home');
   },
