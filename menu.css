@@ -71,8 +71,6 @@
 .round.sound.off::after { content: ""; position: absolute; left: 22%; right: 22%; top: 47%; height: calc(9 * var(--k)); border-radius: 4px; background: #d24a6a; transform: rotate(-40deg); box-shadow: 0 0 0 calc(3 * var(--k)) #fff6ec; }
 .round:active { transform: scale(0.94); }
 
-.version { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 72 * var(--s)); transform: translate(-50%, 50%);
-  color: #f4eafe; font-weight: 600; font-size: calc(30 * var(--s)); text-shadow: 0 1px 2px rgba(30, 15, 50, 0.6); pointer-events: none; }
 
 /* ---- levels: seven cards a page (3, 3, 1), the pictures from the design ---- */
 .pages { position: relative; flex: 0 0 auto; width: 100%; overflow: hidden; touch-action: pan-y; }

@@ -51,7 +51,6 @@
         <button class="pill" data-go="full" hidden>${svg('star')}<span>Full game</span></button>
         <button class="pill" data-quit hidden>${svg('quit')}<span>Quit</span></button>
       </div>
-      <div class="version">${VERSION}</div>
     </section>`);
     scr.levels = el(`<section class="screen" data-screen="levels" aria-label="Select level">
       <button class="round l back" data-back aria-label="Back"></button>
