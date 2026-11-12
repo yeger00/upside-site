@@ -1025,9 +1025,7 @@ function roundButton(x, y, r, kind) {
 function drawOverlay() {
   const both = (fn) => { fn(1); fn(2); };
   const dim = () => { ctx.fillStyle = 'rgba(45,35,64,0.5)'; ctx.fillRect(gx, mapY, gw, mapH); };
-  if (S.state === 'loading') {
-    both(pid => panelFor(pid, ['UPSIDE', 'Loading levels…']));
-  } else if (S.state === 'error') {
+  if (S.state === 'error') {
     both(pid => panelFor(pid, [S.mode === 'game' ? "Levels couldn't load" : 'Oops', ...wrapText(S.loadError || '', 40)]));
   } else if (S.state === 'waiting') {
     both(pid => panelFor(pid, ['Play-test', 'Waiting for the editor…']));
@@ -1098,6 +1096,7 @@ function render(t) {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (S.state === 'menu') return;                // the menu covers everything
   ctx.fillStyle = C.stage; ctx.fillRect(0, 0, W, H);
+  if (S.state === 'loading') return;             // a plain dark screen while starting, not a game screen
   if (staticLayer) ctx.drawImage(staticLayer, gx, mapY, gw, mapH);   // stone, sky, walls and thorns
   drawDots(t);
   if (S.L) drawLevel(t);
@@ -1337,7 +1336,9 @@ if (location.hash === '#playtest') {
   window.UPSIDE.ready = true;
 } else {
   setState('loading');
-  Promise.all([fetchLevels(), fetchEdition(), PR.load()]).then(([defs, , save]) => {
+  // the main menu waits for its pictures and font, so it appears whole
+  const menuArt = /^#level/.test(location.hash) ? null : MENU.preload();
+  Promise.all([fetchLevels(), fetchEdition(), PR.load(), menuArt]).then(([defs, , save]) => {
     LEVELS = defs; SAVE = save; applySettings();
     S.startLevel = startIndexFromHash();
     loadLevel(S.startLevel);

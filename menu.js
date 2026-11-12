@@ -362,5 +362,19 @@
     next.querySelector('.ic').innerHTML = svg(after.next != null ? 'play' : after.fullGame ? 'star' : 'home');
   }
 
-  window.UpsideMenu = { init, open, close, isOpen, isPauseOpen, pause, back, toast, get current() { return current; }, get selected() { return selected; } };
+  // Load the main menu's pictures and font before it is first shown, so it never appears half-drawn
+  // (a plain blue screen with bare words). Gives up after `ms`, so a missing file can't stop the game.
+  const PRELOAD = ['bg', 'crest', 'plate', 'plate-pressed', 'pill', 'round-sound', 'card-1', 'card-2', 'card-3', 'plaque-gold', 'plaque-locked', 'plaque-done'];
+  function preload(ms = 2500) {
+    const pics = PRELOAD.map(n => new Promise(done => {
+      const img = new Image(); img.onload = img.onerror = () => done(); img.src = `assets/ui/${n}.webp`;
+      if (img.decode) img.decode().then(done, done);
+    }));
+    let font = Promise.resolve();
+    try { if (document.fonts && document.fonts.load) font = document.fonts.load('700 20px "Fredoka"').catch(() => {}); } catch (e) {}
+    const limit = new Promise(done => setTimeout(done, ms));
+    return Promise.race([Promise.all([...pics, font]), limit]);
+  }
+
+  window.UpsideMenu = { init, open, close, isOpen, isPauseOpen, pause, back, toast, preload, get current() { return current; }, get selected() { return selected; } };
 })();
