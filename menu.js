@@ -236,7 +236,7 @@
 
   /* ---- the story: the opening film (assets/story/intro.mp4), over the menus. It plays by itself once, on the
      first Play; the main menu's Story button plays it again. Skip (or Back) ends it; then() runs when it ends.
-     On a phone held upright it turns sideways to fill the screen, the same way round for both players. ---- */
+     It is a tall film (9:16): it fills a phone held upright. ---- */
   function story(then) {
     if (storyDone) return;
     storyDone = then || (() => {});
