@@ -10,7 +10,7 @@
 (function (root) {
   'use strict';
   const KEY = 'upside.save.v1';
-  const DEMO_LEVELS = 7;
+  const DEMO_LEVELS = 8;
 
   const blank = () => ({
     v: 1,
