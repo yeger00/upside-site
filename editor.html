@@ -192,6 +192,8 @@ const TOOLS = [
   { ch: 'Y', label: 'White exit', key: 'y', unique: true },
   { ch: 'K', label: 'Black crate', key: 'k' },
   { ch: 'W', label: 'White crate', key: 'j' },
+  { ch: 'k', label: 'Black rocket crate (flies up; levels 34+)', key: 'u' },
+  { ch: 'w', label: 'White rocket crate (flies down; levels 34+)', key: 'i' },
   { ch: 'a', label: 'Plate ●', key: '1' }, { ch: 'A', label: 'Door ●', key: '⇧1' },
   { ch: 'b', label: 'Plate ▲', key: '2' }, { ch: 'B', label: 'Door ▲', key: '⇧2' },
   { ch: 'c', label: 'Plate ■', key: '3' }, { ch: 'C', label: 'Door ■', key: '⇧3' },
@@ -274,6 +276,7 @@ function glyph(g, ch, x, y, ts, opts) {
     g.save(); g.translate(x + ts / 2, y + ts / 2); if (!black) g.rotate(Math.PI);
     A.portal(g, ts, black, false, 0); g.restore();
   } else if (ch === 'K' || ch === 'W') A.crate(g, x + ts * 0.02, y + ts * 0.02, ts * 0.96, black);
+  else if (ch === 'k' || ch === 'w') A.rocket(g, x + ts * 0.02, y + ts * 0.02, ts * 0.96, ch === 'k', ch === 'k', -1);
   else if (ch >= 'a' && ch <= 'd') {
     const side = opts.side || 'floor';
     A.plate(g, x, y, ts, side, false);

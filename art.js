@@ -235,6 +235,35 @@
     rr(g, x + s * 0.13, y + s * 0.13, s * 0.74, s * 0.74, s * 0.1); g.stroke();
     g.beginPath(); g.moveTo(x + i, y + i); g.lineTo(x + s - i, y + s - i); g.moveTo(x + s - i, y + i); g.lineTo(x + i, y + s - i); g.stroke();
   }
+  // A rocket crate (code-drawn until it has art from the reference): a crate with an arrow pointing the way it
+  // will fly and a little flame on the other side. up: flies up. t: time while it moves (flickers), or -1 at rest.
+  function rocket(g, x, y, s, dark, up, t) {
+    const moving = t >= 0, k = moving ? 1 + 0.18 * Math.sin(t * 31) + 0.1 * Math.sin(t * 17) : 0.55;
+    const fx = x + s / 2, base = up ? y + s : y, dir = up ? 1 : -1, fl = s * 0.58 * k;
+    g.save();
+    g.lineJoin = 'round';
+    g.beginPath();                                                       // the flame, behind the crate
+    g.moveTo(fx - s * 0.26, base - dir * s * 0.04);
+    g.quadraticCurveTo(fx - s * 0.22, base + dir * fl * 0.6, fx, base + dir * fl);
+    g.quadraticCurveTo(fx + s * 0.22, base + dir * fl * 0.6, fx + s * 0.26, base - dir * s * 0.04);
+    g.closePath(); g.fillStyle = '#FF9F45'; g.fill();
+    g.lineWidth = Math.max(1.2, s * 0.05); g.strokeStyle = P.outline; g.stroke();
+    g.beginPath();
+    g.moveTo(fx - s * 0.13, base); g.quadraticCurveTo(fx - s * 0.1, base + dir * fl * 0.45, fx, base + dir * fl * 0.62);
+    g.quadraticCurveTo(fx + s * 0.1, base + dir * fl * 0.45, fx + s * 0.13, base); g.closePath();
+    g.fillStyle = '#FFE27A'; g.fill();
+    const lw = Math.max(1.5, s * 0.075);                                 // the crate
+    if (dark) { rr(g, x - lw * 0.7, y - lw * 0.7, s + lw * 1.4, s + lw * 1.4, s * 0.2); g.fillStyle = 'rgba(255,246,240,0.8)'; g.fill(); }
+    rr(g, x, y, s, s, s * 0.16);
+    g.fillStyle = dark ? '#3B2E58' : P.light; g.fill();
+    g.lineWidth = lw; g.strokeStyle = P.outline; g.stroke();
+    g.strokeStyle = dark ? '#7767A3' : '#D3C1DF'; g.lineWidth = Math.max(1, s * 0.07); g.lineCap = 'round';
+    rr(g, x + s * 0.13, y + s * 0.13, s * 0.74, s * 0.74, s * 0.1); g.stroke();
+    const cx = x + s / 2, cy = y + s / 2, a = s * 0.27;                   // the arrow: the way it will fly
+    g.beginPath(); g.moveTo(cx - a, cy + dir * a * 0.55); g.lineTo(cx, cy - dir * a * 0.65); g.lineTo(cx + a, cy + dir * a * 0.55); g.closePath();
+    g.fillStyle = '#FF9F45'; g.fill(); g.lineWidth = Math.max(1, s * 0.05); g.strokeStyle = P.outline; g.stroke();
+    g.restore();
+  }
   // A player, drawn around (0, 0) with the head up. look: { facing: -1 | 0 | 1, blink: 0..1,
   // mood: 'idle' | 'happy' (jumping, celebrating: ^ ^) | 'squint' (falling, landing: > <) }
   function vCharacter(g, w, h, dark, look) {
@@ -484,6 +513,6 @@
 
   if (typeof window !== 'undefined' && typeof document !== 'undefined') load();
 
-  return { P, SPRITES, rr, hash, mix, star4, symbol, sky, stone, wall, thorns, plate, indicator, door, portal, crate, character, button, utility,
+  return { P, SPRITES, rr, hash, mix, star4, symbol, sky, stone, wall, thorns, plate, indicator, door, portal, crate, rocket, character, button, utility,
            decor, ready, onReady };
 });

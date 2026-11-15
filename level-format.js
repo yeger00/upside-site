@@ -17,6 +17,9 @@
  *   a-d plate  ->  A-D door with the same letter. A door is one straight line of its letter, up-and-down or
  *                  side-to-side; a letter may have several doors, and its plates open all of them (see doorRuns)
  *   K  black crate          W      white crate
+ *   k  black rocket crate   w      white rocket crate   (a rocket crate takes the colour of whoever touched it
+ *                                  last and flies the OTHER way, carrying whoever stands on it: Black's touch
+ *                                  sends it up, White's sends it down. Levels from 34 on only.)
  *   ^  thorns on the floor  v      thorns on the ceiling
  *   space  empty
  */
@@ -29,7 +32,7 @@
   const FORMAT = 'upside-level';
   const VERSION = 1;
   const MIN_SIZE = 10, MAX_SIZE = 16;
-  const LEGEND = '#12XYabcdABCDKW^v ';
+  const LEGEND = '#12XYabcdABCDKWkw^v ';
   const ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
   const ONE_OF_EACH = { '1': 'Black start (1)', '2': 'White start (2)', X: 'Black exit (X)', Y: 'White exit (Y)' };
 
