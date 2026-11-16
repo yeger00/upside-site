@@ -16,6 +16,7 @@
     v: 1,
     finished: [],          // ids of levels both players have completed
     started: [],           // ids of levels that were played (finished or not)
+    opened: [],            // ids of every level that has ever been open, so adding or moving levels never locks one again
     last: null,            // id of the level played most recently
     bought: false,         // the full game is unlocked (the app's purchase)
     seenHowTo: false,      // How to Play has been shown once
@@ -30,7 +31,7 @@
     const ids = a => Array.isArray(a) ? a.filter(x => typeof x === 'string') : [];
     return {
       v: 1,
-      finished: ids(s.finished), started: ids(s.started),
+      finished: ids(s.finished), started: ids(s.started), opened: ids(s.opened),
       last: typeof s.last === 'string' ? s.last : null,
       bought: s.bought === true, seenHowTo: s.seenHowTo === true, seenStory: s.seenStory === true,
       // only sound is kept: the old Settings screen (vibration, fullscreen, a slower game) is gone, so a choice
@@ -52,11 +53,22 @@
   function total(ids, edition) {
     return Math.max(ids.length, (edition && edition.edition === 'demo' && edition.fullLevels) || 0);
   }
-  // A level opens when the one before it is finished; a level you've finished or started stays open.
+  // A level opens when the one before it is finished; a level you've finished, started or ever had open stays
+  // open. A level before one you've already finished or started is open too, so a level added behind your
+  // progress (an app update) can be played straight away.
   function isOpen(ids, i, save) {
     if (i === 0) return true;
     const id = ids[i];
-    return save.finished.includes(ids[i - 1]) || save.finished.includes(id) || save.started.includes(id);
+    if (save.finished.includes(ids[i - 1]) || save.finished.includes(id) || save.started.includes(id)) return true;
+    if ((save.opened || []).includes(id)) return true;
+    for (let j = i + 1; j < ids.length; j++) if (save.finished.includes(ids[j]) || save.started.includes(ids[j])) return true;
+    return false;
+  }
+  // Remember every level that is open now (on load and after each win), so it stays open whatever the order.
+  function noteOpen(ids, save) {
+    const opened = (save.opened || []).slice();
+    ids.forEach((id, i) => { if (!opened.includes(id) && isOpen(ids, i, save)) opened.push(id); });
+    return opened.length === (save.opened || []).length ? save : Object.assign({}, save, { opened });
   }
   // What Play starts: the furthest level you've started and not finished; if none, the first open level you
   // haven't finished. null when everything you can open is finished.
@@ -98,7 +110,7 @@
   const add = (list, id) => list.includes(id) ? list : list.concat(id);
   function markStarted(save, id) { return Object.assign({}, save, { started: add(save.started, id), last: id }); }
   function markFinished(save, id) { return Object.assign({}, save, { finished: add(save.finished, id), started: add(save.started, id), last: id }); }
-  function resetProgress(save) { const b = blank(); return Object.assign({}, save, { finished: b.finished, started: b.started, last: null, seenHowTo: false, seenStory: false }); }
+  function resetProgress(save) { const b = blank(); return Object.assign({}, save, { finished: b.finished, started: b.started, opened: b.opened, last: null, seenHowTo: false, seenStory: false }); }
 
   // ---- storing it ----
   // localStorage in the browser; in the app also Capacitor's Preferences, which the phone never clears.
@@ -125,7 +137,7 @@
     return s;
   }
 
-  const api = { KEY, DEMO_LEVELS, blank, clean, limit, total, isOpen, playIndex, cards, afterWin,
+  const api = { KEY, DEMO_LEVELS, blank, clean, limit, total, isOpen, noteOpen, playIndex, cards, afterWin,
     markStarted, markFinished, resetProgress, load, loadLocal, store };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.UpsideProgress = api;

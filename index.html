@@ -400,7 +400,7 @@ function step(i1, i2) {
 function win() {
   setState('won');
   S.events.push('win');
-  if (S.mode === 'game' && LEVELS[S.levelIndex]) updateSave(sv => PR.markFinished(sv, LEVELS[S.levelIndex].id));
+  if (S.mode === 'game' && LEVELS[S.levelIndex]) updateSave(sv => PR.noteOpen(LEVELS.map(l => l.id), PR.markFinished(sv, LEVELS[S.levelIndex].id)));
   sfx('win'); buzz([40, 60, 40]);
   for (const p of [S.p1, S.p2]) burst(p.x + p.w / 2, p.y + p.h / 2, p.id === 1 ? C.black : C.white, 30, 7);
 }
@@ -1360,6 +1360,7 @@ if (location.hash === '#playtest') {
   const menuArt = /^#level/.test(location.hash) ? null : MENU.preload();
   Promise.all([fetchLevels(), fetchEdition(), PR.load(), menuArt]).then(([defs, , save]) => {
     LEVELS = defs; SAVE = save; applySettings();
+    { const was = SAVE; SAVE = PR.noteOpen(LEVELS.map(l => l.id), SAVE); if (SAVE !== was) SAVE = PR.store(SAVE); }
     S.startLevel = startIndexFromHash();
     loadLevel(S.startLevel);
     // a link to one level (#level-<id>) goes straight to it; otherwise the main menu
