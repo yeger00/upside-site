@@ -235,14 +235,14 @@
   }
 
   /* ---- the story: the opening film (assets/story/intro.mp4), over the menus. It plays by itself once, on the
-     first Play; the main menu's Story button plays it again. story(then, 'ending') plays the closing film
-     (assets/story/ending.mp4, poster ending.jpg) after the final level; while that file doesn't exist, it ends at
-     once. Skip (or Back) ends it; then() runs when it ends. It is a tall film (9:16): it fills a phone held upright. ---- */
+     first Play; the main menu's Story button plays it again. story(then, name) plays another film the same way,
+     assets/story/<name>.mp4 (poster <name>.jpg): 'rockets' once before the first level with rocket crates, and
+     'ending' after the final level (while that file doesn't exist, it ends at once). Skip (or Back) ends it; then() runs when it ends. It is a tall film (9:16): it fills a phone held upright. ---- */
   function story(then, film) {
     if (storyDone) return;
     storyDone = then || (() => {});
     storyEl.classList.add('open'); storyEl.setAttribute('aria-hidden', 'false');
-    const v = storyVid, skip = storyEl.querySelector('[data-skip]'), name = film === 'ending' ? 'ending' : 'intro';
+    const v = storyVid, skip = storyEl.querySelector('[data-skip]'), name = film || 'intro';
     if (v.getAttribute('src') !== `assets/story/${name}.mp4`) {
       v.preload = 'auto'; v.poster = `assets/story/${name}.jpg`; v.src = `assets/story/${name}.mp4`;
     }

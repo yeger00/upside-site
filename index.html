@@ -735,6 +735,13 @@ function showMenu(screen, o) {
 }
 // From the menu: show level i's start card (both hold to start)
 function playFromMenu(i) {
+  // the first level with rocket crates (34, Lift Off) starts with the rocket film, once
+  const L = LEVELS[i];
+  if (L && !SAVE.seenRockets && L.map.some(r => /[kw]/.test(r))) {
+    updateSave(sv => Object.assign({}, sv, { seenRockets: true }));
+    MENU.story(() => playFromMenu(i), 'rockets');
+    return;
+  }
   S.mode = 'game';
   loadLevel(i); setState('title');
 }
@@ -1343,6 +1350,7 @@ window.UPSIDE = {
   get SAVE() { return SAVE; },
   menu: MENU, showMenu, setPaused, updateSave, back: handleBack,
   load(i) { loadLevel(i); setState('play'); },
+  play: i => playFromMenu(i),
   loadById(id) {
     const i = LEVELS.findIndex(l => l.id === id);
     if (i < 0) throw new Error(`No level with id "${id}"`);
