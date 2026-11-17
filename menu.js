@@ -65,6 +65,14 @@
       <div class="grow"></div>
       ${btn('data-play-selected', 'play', 'Play Selected', 'wide')}
     </section>`);
+    scr.films = el(`<section class="screen" data-screen="films" aria-label="Story films">
+      <button class="round l back" data-back aria-label="Back"></button>
+      <button class="round r home" data-home aria-label="Home"></button>
+      ${crest('Story')}
+      <div class="grow"></div>
+      <div class="films"></div>
+      <div class="grow"></div>
+    </section>`);
     scr.howto = el(`<section class="screen" data-screen="howto" aria-label="How to Play">
       <button class="round l back" data-back aria-label="Back"></button>
       ${crest('How to Play')}
@@ -154,6 +162,7 @@
     for (const [k, s] of Object.entries(scr)) s.classList.toggle('on', k === name);
     if (name === 'home') renderHome();
     if (name === 'levels') renderLevels(opts.page);
+    if (name === 'films') renderFilms();
     if (name === 'howto') startTips(); else stopTips();
     if (name === 'full') renderFull();
     if (name === 'complete') renderComplete();
@@ -198,7 +207,7 @@
       G.click();
       const where = go.dataset.go;
       if (where === 'play') playNext();
-      else if (where === 'story') story(() => {});
+      else if (where === 'story') { if (FILMS.filter(f => f.open(G.save())).length > 1) open('films', { back: 'home' }); else story(() => {}); }
       else open(where, where === 'full' ? { back: 'home' } : undefined);
       return;
     }
@@ -212,6 +221,8 @@
     if (t.closest('[data-play-selected]')) { G.click(); playSelected(); return; }
     const done = t.closest('[data-complete]');
     if (done) { G.click(); G.completeAction(done.dataset.complete); return; }
+    const film = t.closest('[data-film]');
+    if (film) { G.click(); if (!film.classList.contains('locked')) story(() => {}, film.dataset.film); return; }
     const card = t.closest('.card');
     if (card) { G.click(); cardTap(+card.dataset.i); return; }
     const dot = t.closest('.dots button');
@@ -263,6 +274,29 @@
     storyVid.pause();
     storyEl.classList.remove('open'); storyEl.setAttribute('aria-hidden', 'true');
     then();
+  }
+
+  /* ---- the films (the main menu's Story button): the opening plays straight away until a second film has been
+     seen; then Story opens this screen, a card for each film, the ones not reached yet locked, like the levels ---- */
+  const FILMS = [
+    { id: 'intro', name: 'Opening', open: () => true, at: '50% 30%' },
+    { id: 'rockets', name: 'Rockets', open: s => s.seenRockets, at: '50% 72%' },   // seen before the first rocket level (34)
+    { id: 'ending', name: 'Ending', open: s => s.seenEnding },          // seen after the final level
+  ];
+  function renderFilms() {
+    const box = scr.films.querySelector('.films'), save = G.save();
+    box.innerHTML = '';
+    const ln = el(`<div class="line"></div>`);
+    FILMS.forEach((f, i) => {
+      const on = !!f.open(save);
+      const card = el(`<button class="card film${on ? '' : ' locked'}" data-film="${f.id}" aria-label="${f.name}: ${on ? 'play' : 'locked'}"></button>`);
+      card.appendChild(el(`<img class="pic" src="assets/ui/card-${(i % 3) + 1}.webp" alt="">`));
+      if (on) card.appendChild(el(`<img class="poster" src="assets/story/${f.id}.jpg" alt="" style="object-position:${f.at || '50% 40%'}" onerror="this.remove()">`));
+      else { card.appendChild(el(`<img class="plq" src="assets/ui/plaque-locked.webp" alt="">`)); card.appendChild(el(LOCK)); }
+      card.appendChild(el(`<span class="num">${f.name}</span>`));
+      ln.appendChild(card);
+    });
+    box.appendChild(ln);
   }
 
   /* ---- levels ---- */

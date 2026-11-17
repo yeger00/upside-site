@@ -757,6 +757,7 @@ function tick() {
   updateParticles(DT);
   if (S.state === 'loading' || S.state === 'error' || S.state === 'waiting' || S.state === 'menu') return;
   if (S.state === 'won' && S.mode === 'game' && S.L.seed && S.stateT > 2.2) {        // the final level: the ending film
+    updateSave(sv => Object.assign({}, sv, { seenEnding: true }));
     showMenu('complete', { level: S.levelIndex }); MENU.story(() => {}, 'ending'); return;                // (over Level complete)
   }
   if (S.state === 'won' && S.mode === 'game' && S.stateT > 1.4 && !S.L.seed) { showMenu('complete', { level: S.levelIndex }); return; }
