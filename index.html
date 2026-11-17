@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#3A2F63">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Upside</title>
+<title>Gravibuddies</title>
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -34,7 +34,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap">
 </head>
 <body>
-<canvas id="c" tabindex="0" aria-label="Upside: a two-player co-op game. Black plays from the bottom edge, White from the top edge."></canvas>
+<canvas id="c" tabindex="0" aria-label="Gravibuddies: a two-player co-op game. Black plays from the bottom edge, White from the top edge."></canvas>
 <script src="level-format.js"></script>
 <script src="art.js"></script>
 <script src="progress.js"></script>
@@ -1072,7 +1072,7 @@ function drawOverlay() {
   } else if (S.state === 'title') {
     dim();
     if (S.mode === 'game') both(pid => panelFor(pid, [`Level ${S.levelIndex + 1}`, S.L.name, 'Both hold your band to start']));
-    else both(pid => panelFor(pid, ['UPSIDE', pid === 1 ? 'You are BLACK. You fall toward you.' : 'You are WHITE. You fall toward you.', 'Both hold your band to start']));
+    else both(pid => panelFor(pid, ['GRAVIBUDDIES', pid === 1 ? 'You are BLACK. You fall toward you.' : 'You are WHITE. You fall toward you.', 'Both hold your band to start']));
     const fine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
     if (fine) {
       ctx.fillStyle = P.light; ctx.font = `700 12px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

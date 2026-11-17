@@ -1,4 +1,4 @@
-/* Upside: the menus, laid out like the painted designs in art/menu/ (941 x 1672 each).
+/* Gravibuddies: the menus, laid out like the painted designs in art/menu/ (941 x 1672 each).
    --k turns a design pixel into a screen pixel (the whole design fits the screen's width and height);
    --s is the scale of the background picture, which covers the screen.
    The pieces are cut from the designs by art/extract_menu.py (assets/ui/). */

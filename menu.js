@@ -1,4 +1,4 @@
-/* Upside: the menus, laid out like the painted designs in art/menu/. Main menu, Levels, How to Play,
+/* Gravibuddies: the menus, laid out like the painted designs in art/menu/. Main menu, Levels, How to Play,
    Credits, Full game, Level complete, and the pause panel.
    Plain DOM over the game's canvas; the game (index.html) passes in what the menus need with UpsideMenu.init(game).
    The menus face the bottom of the phone (Black's side): one person holds the phone to choose. The pause panel
@@ -87,7 +87,7 @@
       <button class="round l back" data-back aria-label="Back"></button>
       ${crest('Credits')}
       <div class="panel">
-        <h2>Upside</h2>
+        <h2>Gravibuddies</h2>
         <p>A puzzle game for two friends<br>and one phone.</p>
         <p><b>Made by</b> yeger00</p>
         <p><b>Font</b> Fredoka, by Milena Brandão<br><span class="note">SIL Open Font License</span></p>

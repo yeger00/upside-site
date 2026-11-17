@@ -1,4 +1,4 @@
-/* Upside level format: one shared checker for the game, the editor and the tests.
+/* Gravibuddies level format: one shared checker for the game, the editor and the tests.
  *
  * A level file (levels/<id>.json):
  *   {
