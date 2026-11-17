@@ -107,6 +107,7 @@ function parseLevel(def) {
       else if (ch === '2') L.spawns[2] = { x, y };
       else if (ch === 'X') L.exits[1] = { x, y };
       else if (ch === 'Y') L.exits[2] = { x, y };
+      else if (ch === '*') L.seed = { x, y };                      // the final level: both finish at the seed
       else if (ch === 'K') L.crateDefs.push({ x, y, owner: 1 });
       else if (ch === 'W') L.crateDefs.push({ x, y, owner: 2 });
       else if (ch === 'k') L.crateDefs.push({ x, y, owner: 1, rocket: true });
@@ -328,6 +329,12 @@ function hazards(p) {
   }
 }
 
+// The seed: a player has reached it standing right under it (Black) or right over it (White), up to a tile away
+function atSeed(p, s) {
+  if (!s || !p.grounded) return false;
+  return Math.abs(p.x + p.w / 2 - (s.x + 0.5)) < 0.45 && Math.abs(p.y + p.h / 2 - (s.y + 0.5)) < 1.6;
+}
+
 function onExit(p, e) {
   if (!e || !p.grounded) return false;
   const cx = p.x + p.w / 2;
@@ -387,8 +394,8 @@ function step(i1, i2) {
     d.anim += ((d.open ? 1 : 0) - d.anim) * Math.min(1, 12 * DT);
   }
 
-  p1.atExit = onExit(p1, L.exits[1]);
-  p2.atExit = onExit(p2, L.exits[2]);
+  p1.atExit = L.seed ? atSeed(p1, L.seed) : onExit(p1, L.exits[1]);
+  p2.atExit = L.seed ? atSeed(p2, L.seed) : onExit(p2, L.exits[2]);
   if (S.state === 'play') {
     if (p1.atExit && p2.atExit) { S.winT += DT; if (S.winT > 0.6) win(); }
     else S.winT = 0;
@@ -403,6 +410,7 @@ function win() {
   if (S.mode === 'game' && LEVELS[S.levelIndex]) updateSave(sv => PR.noteOpen(LEVELS.map(l => l.id), PR.markFinished(sv, LEVELS[S.levelIndex].id)));
   sfx('win'); buzz([40, 60, 40]);
   for (const p of [S.p1, S.p2]) burst(p.x + p.w / 2, p.y + p.h / 2, p.id === 1 ? C.black : C.white, 30, 7);
+  if (S.L.seed) burst(S.L.seed.x + 0.5, S.L.seed.y + 0.5, '#FFE08A', 60, 6);      // the seed glows
 }
 
 /* ============================================================
@@ -741,7 +749,10 @@ function tick() {
   S.stateT += DT;
   updateParticles(DT);
   if (S.state === 'loading' || S.state === 'error' || S.state === 'waiting' || S.state === 'menu') return;
-  if (S.state === 'won' && S.mode === 'game' && S.stateT > 1.4) { showMenu('complete', { level: S.levelIndex }); return; }
+  if (S.state === 'won' && S.mode === 'game' && S.L.seed && S.stateT > 2.2) {        // the final level: the ending film
+    showMenu('complete', { level: S.levelIndex }); MENU.story(() => {}, 'ending'); return;                // (over Level complete)
+  }
+  if (S.state === 'won' && S.mode === 'game' && S.stateT > 1.4 && !S.L.seed) { showMenu('complete', { level: S.levelIndex }); return; }
   if (S.state !== 'play') {
     for (const pid of [1, 2]) S.ready[pid] = readyHeld(pid) ? Math.min(1, S.ready[pid] + DT / 0.6) : 0;
     jumpEdge[1] = jumpEdge[2] = false;
@@ -835,6 +846,8 @@ function drawLevel(t) {
   // goal portals
   drawExit(L.exits[1], 1, S.p1.atExit, t);
   drawExit(L.exits[2], 2, S.p2.atExit, t);
+  if (L.seed) A.seed(ctx, sx(L.seed.x + 0.5), sy(L.seed.y + 0.5), TS * 1.5, reduceMotion ? 0 : t,
+    S.state === 'won' ? 1 : ((S.p1.atExit ? 0.5 : 0) + (S.p2.atExit ? 0.5 : 0)));
 
   for (const c of S.crates) drawCrate(c);
   drawPlayer(S.p1, t);
@@ -1159,6 +1172,7 @@ function drawScene(g, L, w, h, look = {}) {
     if (d.dir === 'v') { const hh = r.h * closed, y0 = d.anchor === 'top' ? r.y : r.y + r.h - hh; A.door(g, (r.x + 0.1) * ts, y0 * ts, ts * (r.w - 0.2), ts * hh, ts, sym); }
     else A.door(g, r.x * ts, (r.y + 0.1) * ts, ts * r.w * closed, ts * (r.h - 0.2), ts, sym, 'h');
   }
+  if (L.seed) A.seed(g, (L.seed.x + 0.5) * ts, (L.seed.y + 0.5) * ts, ts * 1.5, look.t || 0, 0);
   for (const who of [1, 2]) {
     const e = L.exits[who]; if (!e) continue;
     g.save(); g.translate((e.x + 0.5) * ts, (e.y + 0.5) * ts); if (who === 2) g.rotate(Math.PI);

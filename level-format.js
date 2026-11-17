@@ -21,6 +21,8 @@
  *                                  last and flies the OTHER way, carrying whoever stands on it: Black's touch
  *                                  sends it up, White's sends it down. Levels from 34 on only.)
  *   ^  thorns on the floor  v      thorns on the ceiling
+ *   *  the seed: the final level's goal, in place of the exits X and Y. Both players finish at it, Black right
+ *      under it and White right over it (standing on the floor and ceiling around it, up to a tile away).
  *   space  empty
  */
 (function (root, factory) {
@@ -32,7 +34,7 @@
   const FORMAT = 'upside-level';
   const VERSION = 1;
   const MIN_SIZE = 10, MAX_SIZE = 16;
-  const LEGEND = '#12XYabcdABCDKWkw^v ';
+  const LEGEND = '#12XYabcdABCDKWkw^v* ';
   const ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
   const ONE_OF_EACH = { '1': 'Black start (1)', '2': 'White start (2)', X: 'Black exit (X)', Y: 'White exit (Y)' };
 
@@ -78,7 +80,11 @@
       count[ch] = (count[ch] || 0) + 1;
       (cells[ch] = cells[ch] || []).push({ x, y });
     }
+    const seeds = count['*'] || 0;
+    if (seeds > 1) errors.push(`There are ${seeds} seeds; there can be at most one.`);
+    if (seeds && (count.X || count.Y)) errors.push('A level with the seed has no exits (X, Y): both players finish at the seed.');
     for (const ch in ONE_OF_EACH) {
+      if (seeds && (ch === 'X' || ch === 'Y')) continue;
       const n = count[ch] || 0;
       if (n !== 1) errors.push(n === 0 ? `Missing the ${ONE_OF_EACH[ch]}.` : `There are ${n} of the ${ONE_OF_EACH[ch]}; there must be exactly one.`);
     }

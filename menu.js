@@ -235,14 +235,17 @@
   }
 
   /* ---- the story: the opening film (assets/story/intro.mp4), over the menus. It plays by itself once, on the
-     first Play; the main menu's Story button plays it again. Skip (or Back) ends it; then() runs when it ends.
-     It is a tall film (9:16): it fills a phone held upright. ---- */
-  function story(then) {
+     first Play; the main menu's Story button plays it again. story(then, 'ending') plays the closing film
+     (assets/story/ending.mp4, poster ending.jpg) after the final level; while that file doesn't exist, it ends at
+     once. Skip (or Back) ends it; then() runs when it ends. It is a tall film (9:16): it fills a phone held upright. ---- */
+  function story(then, film) {
     if (storyDone) return;
     storyDone = then || (() => {});
     storyEl.classList.add('open'); storyEl.setAttribute('aria-hidden', 'false');
-    const v = storyVid, skip = storyEl.querySelector('[data-skip]');
-    if (!v.getAttribute('src')) { v.preload = 'auto'; v.src = 'assets/story/intro.mp4'; }
+    const v = storyVid, skip = storyEl.querySelector('[data-skip]'), name = film === 'ending' ? 'ending' : 'intro';
+    if (v.getAttribute('src') !== `assets/story/${name}.mp4`) {
+      v.preload = 'auto'; v.poster = `assets/story/${name}.jpg`; v.src = `assets/story/${name}.mp4`;
+    }
     try { v.currentTime = 0; } catch (e) {}
     v.muted = !G.save().settings.sound;
     skip.classList.remove('on');

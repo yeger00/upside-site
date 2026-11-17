@@ -370,7 +370,7 @@
     "vine-2": {"rect":[400,866,172,108]},
     "vine-3": {"rect":[1622,722,154,114]}
   };
-  let sheet = null, skyImg = null, loaded = false;
+  let sheet = null, skyImg = null, seedImg = null, loaded = false;
   const waiting = [];
   function load(base) {
     if (sheet || typeof Image === 'undefined') return;
@@ -380,6 +380,7 @@
     sheet = new Image(); skyImg = new Image();
     sheet.onload = skyImg.onload = done;
     sheet.src = base + 'assets/sprites.webp'; skyImg.src = base + 'assets/sky.webp';
+    seedImg = new Image(); seedImg.src = base + 'assets/seed.webp';    // the final level's seed (art/extract_seed.py)
   }
   const ready = () => loaded;
   function onReady(f) { if (loaded) f(); else waiting.push(f); }
@@ -511,8 +512,33 @@
     return true;
   }
 
+  // The seed (the final level's goal), drawn around (cx, cy), about s across: the glowing seed from the opening film,
+  // floating gently in its halo. t: time in seconds (0 holds it still). joy: 0..1, brighter as the friends reach it.
+  function seed(g, cx, cy, s, t, joy) {
+    t = t || 0; joy = joy || 0;
+    const bob = Math.sin(t * 2) * s * 0.05, pulse = 1 + 0.06 * Math.sin(t * 3) + 0.25 * joy;
+    g.save();
+    g.translate(cx, cy + bob);
+    const R = s * 0.95 * pulse, halo = g.createRadialGradient(0, 0, s * 0.1, 0, 0, R);
+    halo.addColorStop(0, `rgba(255,236,160,${0.75 + 0.25 * joy})`); halo.addColorStop(0.45, 'rgba(255,214,110,0.35)'); halo.addColorStop(1, 'rgba(255,214,110,0)');
+    g.fillStyle = halo; g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill();
+    for (let i = 0; i < 4; i++) {                                        // a few sparkles circling it
+      const a = t * 0.8 + i * Math.PI / 2, d = s * (0.55 + 0.08 * Math.sin(t * 2 + i));
+      star4(g, Math.cos(a) * d, Math.sin(a) * d, s * (0.06 + 0.03 * Math.sin(t * 4 + i)), 'rgba(255,248,220,0.9)');
+    }
+    const w = s * 0.62;
+    if (seedImg && seedImg.complete && seedImg.naturalWidth) g.drawImage(seedImg, -w / 2, -w / 2, w, w);
+    else {                                                               // until the picture loads: a golden seed
+      g.rotate(0.6); const k = g.createLinearGradient(-w * 0.3, -w * 0.4, w * 0.3, w * 0.4);
+      k.addColorStop(0, '#FFE39A'); k.addColorStop(1, '#F0A53A');
+      g.fillStyle = k; g.beginPath(); g.ellipse(0, 0, w * 0.27, w * 0.42, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(200,120,40,0.7)'; g.lineWidth = Math.max(1, w * 0.02); g.beginPath(); g.moveTo(0, -w * 0.4); g.lineTo(0, w * 0.4); g.stroke();
+    }
+    g.restore();
+  }
+
   if (typeof window !== 'undefined' && typeof document !== 'undefined') load();
 
-  return { P, SPRITES, rr, hash, mix, star4, symbol, sky, stone, wall, thorns, plate, indicator, door, portal, crate, rocket, character, button, utility,
+  return { P, SPRITES, rr, hash, mix, star4, symbol, sky, stone, wall, thorns, plate, indicator, door, portal, crate, rocket, seed, character, button, utility,
            decor, ready, onReady };
 });
