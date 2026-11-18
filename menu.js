@@ -32,7 +32,12 @@
   const LOCK = `<svg class="lock" viewBox="0 0 64 70" aria-hidden="true"><path d="M18 30V20a14 14 0 0128 0v10" fill="none" stroke="#3a2550" stroke-width="9"/><path d="M18 30V20a14 14 0 0128 0v10" fill="none" stroke="#fff6ec" stroke-width="3.5"/><rect x="7" y="28" width="50" height="38" rx="10" fill="#fff6ec" stroke="#3a2550" stroke-width="5"/><circle cx="32" cy="44" r="5.5" fill="#3a2550"/><rect x="29.5" y="46" width="5" height="10" rx="2.5" fill="#3a2550"/></svg>`;
   const el = html => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; };
   const btn = (go, icon, label, cls = '') => `<button class="btn ${cls}" ${go}>${icon ? `<span class="ic">${svg(icon)}</span><span class="div"></span>` : ''}<span class="label">${label}</span></button>`;
-  const crest = (title, cls = 'small') => `<div class="crest ${cls}"><img src="assets/ui/crest.webp" alt=""><div class="title">${title}</div></div>`;
+  // the crest, with the screen's name curved along its ribbon. The title box is 730 x 140 of the crest's 1460 x 1078
+  // pixels (menu.css); the text follows the ribbon's arch: from y 80 at its ends up to 49 in the middle.
+  let arcs = 0;
+  const crest = (title, cls = 'small') => { const id = 'crest-arc-' + (++arcs);
+    return `<div class="crest ${cls}"><img src="assets/ui/crest.webp" alt=""><div class="title"><svg viewBox="0 0 730 140" aria-label="${title}" role="img">` +
+      `<path id="${id}" d="M0,80 Q365,18 730,80" fill="none"/><text dominant-baseline="central"><textPath href="#${id}" startOffset="50%" text-anchor="middle">${title}</textPath></text></svg></div></div>`; };
 
   let storyEl = null, storyVid = null, storyDone = null, storySkipT = 0;
   let G = null, root = null, pauseEl = null, toastEl = null, current = null, opts = {}, levelPage = 0, selected = null, tipsRAF = 0, pausePid = 1;
