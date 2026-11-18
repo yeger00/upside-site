@@ -149,6 +149,13 @@
     });
 
     root.addEventListener('click', onClick);
+    // Level complete: Space (or Enter) presses its button, Next Level (the website on a computer)
+    document.addEventListener('keydown', e => {
+      if (current !== 'complete' || storyDone || e.repeat || !(e.code === 'Space' || e.code === 'Enter')) return;
+      const next = scr.complete.querySelector('[data-complete="next"]');
+      if (document.activeElement === next) return;        // a focused button presses itself
+      e.preventDefault(); G.click(); G.completeAction('next');
+    });
     pauseEl.addEventListener('click', e => {
       const b = e.target.closest('[data-pause]'); if (!b) return;
       G.click();
