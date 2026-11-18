@@ -4,8 +4,9 @@
    The pieces are cut from the designs by art/extract_menu.py (assets/ui/). */
 @font-face { font-family: "Fredoka"; src: url(assets/fonts/Fredoka.ttf) format("truetype"); font-weight: 300 700; font-display: swap; }
 :root {
-  --k: min(calc(100vw / 880), calc(100vh / 1600));
-  --s: max(calc(100vw / 941), calc(100vh / 1672));
+  --colw: min(100vw, 62vh);                         /* the game's column (index.html: gw = min(W, 0.62 H)) */
+  --k: min(calc(var(--colw) / 880), calc(100vh / 1600));
+  --s: max(calc(var(--colw) / 941), calc(100vh / 1672));
   --ink: #3a2550;
   --menu-font: "Fredoka", "Nunito", "Trebuchet MS", system-ui, sans-serif;
 }
@@ -15,11 +16,14 @@
 }
 .menu, .pause { position: fixed; inset: 0; z-index: 5; display: none; }
 .menu.open, .pause.open { display: block; }
-.menu { background: #6aa6ec url(assets/ui/bg.webp) center bottom / cover no-repeat; overflow: hidden; }
+/* on a wide screen the menus keep to the game's column, with the game's purple at the sides */
+.menu { background: #231A36; overflow: hidden; }
+.menu::before { content: ""; position: absolute; top: 0; bottom: 0; left: calc((100vw - var(--colw)) / 2); width: var(--colw);
+  background: #6aa6ec url(assets/ui/bg.webp) center bottom / cover no-repeat; }
 .menu button, .pause button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
 
 /* ---- screens: a column in design units, the garden wall left clear at the bottom ---- */
-.screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; box-sizing: border-box;
+.screen { position: absolute; top: 0; bottom: 0; left: calc((100vw - var(--colw)) / 2); width: var(--colw); display: none; flex-direction: column; align-items: center; box-sizing: border-box;
   padding: env(safe-area-inset-top, 0px) 0 calc(env(safe-area-inset-bottom, 0px) + 168 * var(--s)); }
 .screen.on { display: flex; }
 .grow { flex: 1 1 0; min-height: calc(6 * var(--k)); }
@@ -109,6 +113,17 @@
 .tip { position: relative; width: calc(420 * var(--k)); height: calc(406 * var(--k)); }
 .tip canvas { position: absolute; left: 5.1%; top: 22%; width: 89.8%; height: 73.2%; border-radius: calc(18 * var(--k)); display: block; }
 .tip img { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* the keyboard keys (the website on a computer; not in the app or on a touch-only phone) */
+.keys { flex: 0 0 auto; margin: calc(16 * var(--k)) 0 calc(14 * var(--k)); padding: calc(8 * var(--k)) calc(28 * var(--k)); border-radius: calc(30 * var(--k));
+  background: #fff6ec; border: calc(5 * var(--k)) solid #70567a; box-shadow: 0 calc(6 * var(--k)) 0 rgba(84, 98, 155, 0.5);
+  display: grid; grid-template-columns: auto auto auto; gap: calc(6 * var(--k)) calc(22 * var(--k)); align-items: center; font-size: calc(30 * var(--k)); font-weight: 700; }
+.keys .who { display: flex; align-items: center; gap: calc(10 * var(--k)); }
+.keys .who i { display: inline-block; width: calc(30 * var(--k)); height: calc(30 * var(--k)); border-radius: calc(8 * var(--k)); border: calc(3 * var(--k)) solid #3a2550; }
+.keys .who i.b { background: #4a3466; } .keys .who i.w { background: #fff6ec; }
+.keys .kc { display: inline-flex; align-items: center; justify-content: center; min-width: calc(44 * var(--k)); height: calc(44 * var(--k)); margin-right: calc(6 * var(--k));
+  border-radius: calc(10 * var(--k)); background: #ffffff; border: calc(3 * var(--k)) solid #3a2550; box-shadow: 0 calc(4 * var(--k)) 0 #3a2550; font-size: calc(28 * var(--k)); }
+.menu.app .keys { display: none; }
+@media (hover: none) and (pointer: coarse) { .keys { display: none; } }
 .tip .tab { position: absolute; left: 22%; right: 22%; top: 2%; height: 17%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: calc(36 * var(--k)); white-space: nowrap; }
 
 /* ---- credits and the full-game card ---- */

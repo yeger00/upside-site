@@ -481,8 +481,7 @@ async function requestWake() {
 }
 function firstGesture() {
   if (gestureDone) return;
-  gestureDone = true;
-  if (SAVE.settings.fullscreen && !isApp) enterFullscreen();
+  gestureDone = true;                     // (no fullscreen on the website: the page stays as the browser shows it)
   requestWake();
 }
 function enterFullscreen() {

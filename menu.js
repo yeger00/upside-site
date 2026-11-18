@@ -41,6 +41,7 @@
   function init(game) {
     G = game;
     root = el(`<div class="menu" id="menu" aria-hidden="true"></div>`);
+    if (G.isApp()) root.classList.add('app');            // the app has no keyboard: How to Play leaves out the keys
     scr.home = el(`<section class="screen" data-screen="home" aria-label="Main menu">
       <button class="round l sound" data-sound aria-label="Sound"></button>
       ${crest('Floating Garden', 'sub')}
@@ -79,6 +80,10 @@
       <div class="tips">
         ${[['move', 'Move'], ['jump', 'Jump'], ['plates', 'Plates &amp; Doors'], ['exits', 'Reach Both Exits']].map(([k, t]) =>
           `<div class="tip"><canvas data-tip="${k}" width="388" height="306" role="img" aria-label="${t}"></canvas><img src="assets/ui/tip-card.webp" alt=""><div class="tab">${t}</div></div>`).join('')}
+      </div>
+      <div class="keys" aria-label="Keyboard: Black moves with A and D and jumps with W; White moves with the left and right arrows and jumps with the up arrow">
+        <span class="who"><i class="b"></i>Black</span><span><b class="kc">A</b><b class="kc">D</b> move</span><span><b class="kc">W</b> jump</span>
+        <span class="who"><i class="w"></i>White</span><span><b class="kc">←</b><b class="kc">→</b> move</span><span><b class="kc">↑</b> jump</span>
       </div>
       <div class="grow"></div>
       ${btn('data-howto-done', '', 'Got It!')}
