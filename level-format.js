@@ -1,4 +1,4 @@
-/* Gravibuddies level format: one shared checker for the game, the editor and the tests.
+/* UpDown Buddies level format: one shared checker for the game, the editor and the tests.
  *
  * A level file (levels/<id>.json):
  *   {

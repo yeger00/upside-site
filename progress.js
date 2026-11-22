@@ -1,4 +1,4 @@
-/* Gravibuddies: saved progress and settings, and the rules that read them.
+/* UpDown Buddies: saved progress and settings, and the rules that read them.
    Used by the game (index.html) and the tests. No dependencies; works in the browser and in Node.
 
    Progress is kept by level id, never by number, so reordering levels/index.json can't mix it up.

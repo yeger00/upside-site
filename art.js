@@ -1,4 +1,4 @@
-/* Gravibuddies art: the one look shared by the game and the editor ("floating garden ruins").
+/* UpDown Buddies art: the one look shared by the game and the editor ("floating garden ruins").
  *
  * The look comes from the design reference (art/reference.png): art/extract.py cuts each object out of it into
  * one sprite atlas (assets/sprites.webp) and paints the objects out of its level window to make the sky
