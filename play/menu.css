@@ -46,6 +46,7 @@
   width: calc(514 * var(--k)); height: calc(152 * var(--k)); margin: calc(-3 * var(--k)) 0;
   background: url(assets/ui/plate.webp) center / 100% 100% no-repeat; }
 .btn:active, .btn.down { background-image: url(assets/ui/plate-pressed.webp); transform: translateY(calc(3 * var(--k))); }
+a.btn { color: var(--ink); text-decoration: none; }
 .btn[hidden], .pill[hidden], .round[hidden] { display: none; }
 .btn .ic { width: 31%; height: 82%; display: grid; place-items: center; flex: 0 0 auto; }
 .btn .ic svg { width: calc(66 * var(--k)); height: calc(66 * var(--k)); fill: var(--ink); }

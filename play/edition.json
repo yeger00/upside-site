@@ -1,5 +1,6 @@
 {
   "edition": "demo",
   "demoLevels": 8,
-  "fullLevels": 62
+  "fullLevels": 62,
+  "getUrl": "../#get"
 }

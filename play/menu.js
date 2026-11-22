@@ -445,7 +445,11 @@
       holdButton(b, 2500, b.querySelector('.fill'), () => { G.buy().then(ok => { if (ok) open('home'); }); });
       pitch.appendChild(el(`<p class="note">${G.priceNote()}</p>`));
     } else {
-      pitch.appendChild(el(`<p><b>Coming soon</b> to Android and iPhone.</p>`));
+      // the website links to its landing page's "Get it" (edition.json getUrl); the itch.io demo just says where to look
+      if (ed.getUrl) {
+        pitch.appendChild(el(`<p>Get the full game for <b>Android</b>.</p>`));
+        buy.appendChild(el(`<a class="btn" data-get href="${ed.getUrl}" target="_top"><span class="ic">${svg('star')}</span><span class="div"></span><span class="label">Get it</span></a>`));
+      } else pitch.appendChild(el(`<p>${ed.getNote ? ed.getNote.replace(/[<>&]/g, '') : '<b>Coming soon</b> to Android and iPhone.'}</p>`));
       pitch.appendChild(el(`<p class="note">Your progress here stays on this device.</p>`));
     }
   }
