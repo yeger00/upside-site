@@ -122,10 +122,6 @@ dialog .btn { font-size: 17px; padding: 8px 20px 9px; }
 .checks li::before { content: ""; flex: none; width: 30px; height: 30px; margin-top: -1px; border-radius: 50%; background: var(--gold) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%233a2550' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 20px no-repeat; }
 .checks b { color: #fff; }
 
-/* ---- screenshots ---- */
-.shots { display: flex; gap: 18px; overflow-x: auto; padding: 8px 22px 22px; scroll-snap-type: x mandatory; max-width: 1400px; margin: 0 auto; scrollbar-color: var(--purple) transparent; }
-.shots img { flex: none; width: 230px; aspect-ratio: 390 / 844; border-radius: 26px; border: 6px solid #2f2447; box-shadow: 0 12px 24px rgba(40, 20, 80, 0.25); scroll-snap-align: center; object-fit: cover; }
-
 /* ---- get it ---- */
 .get-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 26px; align-items: start; }
 .offer { padding: 28px 30px 30px; }
@@ -240,8 +236,8 @@ footer nav a { color: #fff; text-shadow: none; }
         <p>Two buddies, a golden seed and a sky split in two, told in short painted films between the levels.</p></div>
       <div class="card feature"><h3><i><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="#fff" stroke="#3a2550" stroke-width="2"/><path d="M9 10h.01M15 10h.01" stroke="#3a2550" stroke-width="3" stroke-linecap="round"/><path d="M8.5 14c1.8 2 5.2 2 7 0" fill="none" stroke="#3a2550" stroke-width="2" stroke-linecap="round"/></svg></i>No timers, no scores</h3>
         <p>Take your time, talk it over, try again. The fun is in working it out together.</p></div>
-      <div class="card feature"><h3><i><svg viewBox="0 0 24 24"><path d="M4 20l1-4.5L15.5 5l3.5 3.5L8.5 19z" fill="#ffd257" stroke="#3a2550" stroke-width="2" stroke-linejoin="round"/></svg></i>Make your own levels</h3>
-        <p>The free <a href="play/editor.html">level editor</a> runs in your browser. Share what you make with a link.</p></div>
+      <div class="card feature"><h3><i><svg viewBox="0 0 24 24"><path d="M12 21c-4-3-7-6-7-10a7 7 0 0114 0c0 4-3 7-7 10z" fill="#ffb3d1" stroke="#3a2550" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.6" fill="#ffd257" stroke="#3a2550" stroke-width="1.6"/></svg></i>A hand-painted garden</h3>
+        <p>Floating ruins, pink blossom and soft clouds: a colourful, cosy world for little and big players.</p></div>
     </div>
   </div>
 </section>
@@ -282,21 +278,6 @@ footer nav a { color: #fff; text-shadow: none; }
   </div>
 </section>
 
-<section id="shots">
-  <div class="wrap"><h2 class="ribbon">Screenshots</h2></div>
-  <div class="shots" tabindex="0" aria-label="Screenshots (scroll sideways)">
-    <img src="img/shot-1.webp" alt="The main menu" loading="lazy">
-    <img src="img/shot-2.webp" alt="Level 2, Relay: Black holds a plate to open White's door" loading="lazy">
-    <img src="img/shot-3.webp" alt="Level 4, Special delivery: a crate changes sides" loading="lazy">
-    <img src="img/shot-4.webp" alt="Level 34, Lift Off: Black rides a rocket crate" loading="lazy">
-    <img src="img/shot-5.webp" alt="Level 26, Flip the Tower" loading="lazy">
-    <img src="img/shot-6.webp" alt="Level 38, Two Lifts" loading="lazy">
-    <img src="img/shot-7.webp" alt="Level 60, Crate Rain" loading="lazy">
-    <img src="img/shot-8.webp" alt="Level 14, Busy Doors" loading="lazy">
-    <img src="img/shot-9.webp" alt="The level map" loading="lazy">
-  </div>
-</section>
-
 <section id="get" style="padding-top: 30px">
   <div class="wrap">
     <h2 class="ribbon">Get UpDown Buddies</h2>
@@ -334,7 +315,6 @@ footer nav a { color: #fff; text-shadow: none; }
       <details class="card"><summary>Does it need the internet?</summary><p>No. Once it's installed, the full game works offline.</p></details>
       <details class="card"><summary>Is my progress saved?</summary><p>Yes, on your device. If you finish the free demo first, the full game starts fresh, and it's quick to catch up.</p></details>
       <details class="card"><summary>Is there an iPhone version?</summary><p>Not yet. On an iPhone or iPad you can play the free demo in Safari.</p></details>
-      <details class="card"><summary>Can we make our own levels?</summary><p>Yes! Try the <a href="play/editor.html">level editor</a> in your browser. You can share a level you made with a link, and play it right away.</p></details>
     </div>
   </div>
 </section>
@@ -348,7 +328,7 @@ footer nav a { color: #fff; text-shadow: none; }
   <div class="wrap">
     <img src="play/assets/ui/crest.webp" alt="UpDown Buddies" loading="lazy">
     <p>Made by yeger00 · Font: Fredoka by Milena Brandão</p>
-    <nav aria-label="More"><a href="play/">Free demo</a><a href="#get" data-itch>itch.io</a><a href="play/editor.html">Level editor</a><a href="privacy.html">Privacy</a></nav>
+    <nav aria-label="More"><a href="play/">Free demo</a><a href="#get" data-itch>itch.io</a><a href="privacy.html">Privacy</a></nav>
   </div>
 </footer>
 
